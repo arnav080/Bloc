@@ -21,6 +21,7 @@ export interface Recipe {
     runs: number;
     benchmarks: Benchmark[];
   };
+  yamlContent?: string;
 }
 
 export const registryRecipes: Recipe[] = [];

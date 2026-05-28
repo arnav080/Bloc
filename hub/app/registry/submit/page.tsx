@@ -10,7 +10,8 @@ import dynamic from "next/dynamic";
 import { 
   ArrowLeft, 
   AlertCircle, 
-  Download
+  Download,
+  BookOpen
 } from "lucide-react";
 
 // Monaco loaded lazily — avoids bundling ~2MB for unauthenticated page views
@@ -23,67 +24,29 @@ const Editor = dynamic(() => import("@monaco-editor/react"), {
   ),
 });
 
-// Sample recipe — Qwen3-30B-A3B MoE, RTX 4060 Ti 8GB, CPU expert offload
+// Minimal starter template for custom recipes
 const DEFAULT_YAML_TEMPLATE = `# ──────────────────────────────────────────────────────────────────
 #  BLOC RECIPE  ·  schema bloc/v1
-#  Qwen3-30B-A3B (MoE) · RTX 4060 Ti 8GB · CPU Expert Offload
-#  49 t/s · 262k context · 3.2 GB VRAM free
+#  Define your custom local AI execution environment parameters.
 # ──────────────────────────────────────────────────────────────────
 
 schema: "bloc/v1"
 
 metadata:
-  name: "qwen3-30b-moe-8gb-cpu-offload"
-  description: "Qwen3-30B MoE on RTX 4060 Ti 8GB. All 41 expert blocks offloaded to CPU RAM. 49 t/s at full 262k native context with 3.2 GB VRAM free."
-  tags: [moe, long-context, 8gb, cuda, reasoning]
+  name: "my-custom-recipe"
+  description: "A short description of your optimized recipe configuration."
+  tags: []
 
 model:
-  source: "huggingface:Qwen/Qwen3-30B-A3B"
-  gguf_repo: "huggingface:bartowski/Qwen_Qwen3-30B-A3B-GGUF"
-  file: "Qwen_Qwen3-30B-A3B-Q4_K_M.gguf"
-  download_url: "https://huggingface.co/bartowski/Qwen_Qwen3-30B-A3B-GGUF/resolve/main/Qwen_Qwen3-30B-A3B-Q4_K_M.gguf"
+  source: "huggingface:username/model-repo"
   quantization: "Q4_K_M"
 
 engine:
   name: "llama.cpp"
-  variant: null
-  tested_commit: "b5350"    # CLI warns if your local binary is older
 
 hardware:
   min_vram: "8GB"
-  target_platform: "cuda"   # cuda | metal | rocm | cpu | vulkan
-  gpu_count: 1
-  recommended_ram: "32GB"   # CPU expert offload needs RAM headroom
-
-engine_config:
-  ctx_size: 262144          # -c  full native context of Qwen3-30B-A3B
-  gpu_layers: 99            # -ngl  all non-expert layers to GPU
-  n_cpu_moe: 99             # --n-cpu-moe  all 41 MoE experts on CPU
-                            #   99 = max context (262k) at 49 t/s
-                            #   32 = 9 experts on GPU, 55 t/s, 147k ctx
-  flash_attn: true          # -fa
-  batch_size: 512           # -b
-  ubatch_size: 256          # -ub
-  cache_type_k: "q4_0"     # -ctk  saves VRAM at deep context
-  cache_type_v: "q4_0"     # -ctv
-  spec_type: null           # --spec-type  null | draft | draft-mtp
-  spec_draft_model: null    # -md  path to draft model (if spec_type set)
-  spec_draft_n_max: null    # --spec-draft-n-max
-  spec_draft_p_min: null    # --spec-draft-p-min
-  threads: 12               # -t  match your physical CPU core count
-  mlock: false              # --mlock
-  mmap: true                # false = --no-mmap
-  host: "127.0.0.1"         # --host
-  port: 8080                # --port
-  n_parallel: 1             # -np
-  jinja: true               # --jinja  required for Qwen3 thinking mode
-  extra_args: []            # any flags not listed above, passed verbatim
-
-pre_run:
-  env: {}
-  commands: []
-  # commands:
-  #   - "sudo nvidia-smi -pl 200"  # optional power cap
+  target_platform: "cuda"
 `;
 
 interface ParsedManifest {
@@ -165,9 +128,9 @@ export default function RecipeSubmitPage() {
 
   const [yamlText, setYamlText] = useState(DEFAULT_YAML_TEMPLATE);
   const [parsed, setParsed] = useState<ParsedManifest>({
-    name: "qwen3-30b-moe-8gb-cpu-offload",
-    description: "Qwen3-30B MoE on RTX 4060 Ti 8GB. All 41 expert blocks offloaded to CPU RAM. 49 t/s at full 262k native context with 3.2 GB VRAM free.",
-    baseModel: "huggingface:Qwen/Qwen3-30B-A3B",
+    name: "my-custom-recipe",
+    description: "A short description of your optimized recipe configuration.",
+    baseModel: "huggingface:username/model-repo",
     engine: "llama.cpp",
     minVram: "8GB",
     targetPlatform: "cuda",
@@ -401,7 +364,7 @@ export default function RecipeSubmitPage() {
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808005_1px,transparent_1px),linear-gradient(to_bottom,#80808005_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none -z-10" />
 
       {/* Breadcrumbs Header */}
-      <div className="mb-10 text-left border-b border-zinc-200 dark:border-zinc-800 pb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+      <div className="mb-10 text-left border-b border-zinc-200 dark:border-zinc-800 pb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-6">
         <div>
           <Link href="/registry" className="inline-flex items-center gap-1.5 font-mono text-[10px] text-zinc-400 dark:text-zinc-500 hover:text-black dark:hover:text-white transition-colors mb-4 group">
             <ArrowLeft className="w-3 h-3 transition-transform group-hover:-translate-x-0.5" />
@@ -415,10 +378,19 @@ export default function RecipeSubmitPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex flex-col gap-2 shrink-0 w-full md:w-44">
+          <Link
+            href="/docs"
+            target="_blank"
+            className="flex items-center justify-center gap-2 h-9 w-full border border-dashed border-zinc-400 dark:border-zinc-700 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900/40 dark:hover:bg-zinc-900/80 font-mono text-[9px] uppercase font-bold tracking-wider cursor-pointer text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-zinc-250 transition-colors rounded-none"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            YAML Schema Docs
+          </Link>
+
           <button
             onClick={handleDownloadYaml}
-            className="flex items-center gap-2 h-9 px-4 border border-black dark:border-white font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer bg-transparent transition-colors text-black dark:text-white hover:opacity-80"
+            className="flex items-center justify-center gap-2 h-9 w-full border border-black dark:border-white font-mono text-[10px] uppercase font-bold tracking-wider cursor-pointer bg-transparent transition-colors text-black dark:text-white hover:opacity-80"
           >
             <Download className="w-3.5 h-3.5" />
             Download YAML
@@ -427,7 +399,7 @@ export default function RecipeSubmitPage() {
           <button
             onClick={handlePublish}
             disabled={isPublishing}
-            className="group relative flex items-center justify-center h-9 px-5 bg-blue-500 hover:bg-blue-600 text-white font-mono text-[10px] uppercase font-bold tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="group relative flex items-center justify-center h-9 w-full bg-blue-500 hover:bg-blue-600 text-white font-mono text-[10px] uppercase font-bold tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isPublishing ? "Publishing..." : "Publish Recipe"}
           </button>

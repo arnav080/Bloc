@@ -24,7 +24,7 @@ export default function TerminalCommand({
   };
 
   return (
-    <div className={`group relative flex items-center justify-between gap-4 bg-[#111110] border border-zinc-800/80 rounded-none px-5 py-3 font-mono text-[14px] leading-none text-zinc-200 select-none w-full max-w-md shadow-lg ${className}`}>
+    <div className={`group relative flex items-center justify-between gap-3 sm:gap-4 bg-[#111110] border border-zinc-800/80 rounded-none px-4 sm:px-5 py-2.5 sm:py-3 font-mono text-xs sm:text-[14px] leading-none text-zinc-200 select-none w-full max-w-md shadow-lg ${className}`}>
       {/* Corner L-brackets appearing on hover */}
       {/* Top-Left */}
       <svg 
@@ -55,7 +55,7 @@ export default function TerminalCommand({
         <path d="M 0,12 L 0,0 L 12,0 L 12,1 L 4,1 Q 1,1 1,4 L 1,12 Z" />
       </svg>
 
-      <div className="flex items-center gap-3 overflow-x-auto scrollbar-none">
+      <div className="flex-1 min-w-0 flex items-center gap-3 overflow-x-auto scrollbar-none">
         <span className="text-zinc-600 select-none">$</span>
         <span className="whitespace-nowrap tracking-wide text-zinc-100">{command}</span>
       </div>

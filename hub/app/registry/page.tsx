@@ -201,6 +201,7 @@ export default function RegistryPage() {
   const [selectedVram, setSelectedVram] = useState<string[]>([]);
   const [selectedPlatform, setSelectedPlatform] = useState<string[]>([]);
   const [selectedVerification, setSelectedVerification] = useState<string[]>([]);
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
   
   // View Modes: 'default' | 'model' | 'gpu'
   const [viewMode, setViewMode] = useState<"default" | "model" | "gpu">("default");
@@ -361,62 +362,83 @@ export default function RegistryPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start w-full mt-8">
         
         {/* Left Column: Sidebar Filters */}
-        <div className="lg:col-span-1 flex flex-col gap-8 border border-zinc-300 dark:border-zinc-800 bg-[#f6f6f3]/50 dark:bg-[#171616]/50 p-6 rounded-none">
+        <div className="lg:col-span-1 flex flex-col border border-zinc-300 dark:border-zinc-800 bg-[#f6f6f3]/50 dark:bg-[#171616]/50 p-6 rounded-none">
           
-          {/* Header */}
-          <div className="border-b border-zinc-200 dark:border-zinc-800 pb-3">
-            <h3 className="font-mono text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider">Filters</h3>
+          {/* Header & Mobile Toggle */}
+          <div 
+            onClick={() => setIsFiltersOpen(!isFiltersOpen)}
+            className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 pb-3 cursor-pointer lg:cursor-default select-none"
+          >
+            <h3 className="font-mono text-xs font-bold text-zinc-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+              Filters
+              {(selectedVram.length > 0 || selectedPlatform.length > 0 || selectedVerification.length > 0) && (
+                <span className="w-4 h-4 rounded-full bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">
+                  {selectedVram.length + selectedPlatform.length + selectedVerification.length}
+                </span>
+              )}
+            </h3>
+            <div className="lg:hidden text-zinc-500 hover:text-black dark:hover:text-white">
+              <svg 
+                width="12" height="12" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg"
+                className={`transform transition-transform duration-250 ${isFiltersOpen ? "rotate-180" : ""}`}
+              >
+                <path d="M4 6L7.5 9.5L11 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
           </div>
 
-          {/* VRAM Tiers */}
-          <div className="flex flex-col gap-2.5">
-            <h4 className="font-mono text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">VRAM Limits</h4>
-            {["4GB", "8GB", "12GB", "24GB", "Unified"].map((vram) => (
-              <label key={vram} className="flex items-center gap-2 cursor-pointer font-mono text-[10px] text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white">
-                <input 
-                  type="checkbox"
-                  checked={selectedVram.includes(vram)}
-                  onChange={() => toggleFilter(selectedVram, setSelectedVram, vram)}
-                  className="rounded-none border-zinc-300 dark:border-zinc-800 text-blue-600 focus:ring-0 w-3 h-3 bg-transparent accent-blue-600"
-                />
-                {vram} {vram === "Unified" ? "Mac" : ""}
-              </label>
-            ))}
-          </div>
+          {/* Collapsible Options Container */}
+          <div className={`lg:flex flex-col gap-8 mt-6 ${isFiltersOpen ? "flex" : "hidden"}`}>
+            {/* VRAM Tiers */}
+            <div className="flex flex-col gap-2.5">
+              <h4 className="font-mono text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">VRAM Limits</h4>
+              {["4GB", "8GB", "12GB", "24GB", "Unified"].map((vram) => (
+                <label key={vram} className="flex items-center gap-2 cursor-pointer font-mono text-[10px] text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white">
+                  <input 
+                    type="checkbox"
+                    checked={selectedVram.includes(vram)}
+                    onChange={() => toggleFilter(selectedVram, setSelectedVram, vram)}
+                    className="rounded-none border-zinc-300 dark:border-zinc-800 text-blue-600 focus:ring-0 w-3 h-3 bg-transparent accent-blue-600"
+                  />
+                  {vram} {vram === "Unified" ? "Mac" : ""}
+                </label>
+              ))}
+            </div>
 
-          {/* Platform Tiers */}
-          <div className="flex flex-col gap-2.5">
-            <h4 className="font-mono text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Platform Acceleration</h4>
-            {["CUDA", "METAL", "ROCM", "CPU"].map((platform) => (
-              <label key={platform} className="flex items-center gap-2 cursor-pointer font-mono text-[10px] text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white">
-                <input 
-                  type="checkbox"
-                  checked={selectedPlatform.includes(platform)}
-                  onChange={() => toggleFilter(selectedPlatform, setSelectedPlatform, platform)}
-                  className="rounded-none border-zinc-300 dark:border-zinc-800 text-blue-600 focus:ring-0 w-3 h-3 bg-transparent accent-blue-600"
-                />
-                {platform}
-              </label>
-            ))}
-          </div>
+            {/* Platform Tiers */}
+            <div className="flex flex-col gap-2.5">
+              <h4 className="font-mono text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Platform Acceleration</h4>
+              {["CUDA", "METAL", "ROCM", "CPU"].map((platform) => (
+                <label key={platform} className="flex items-center gap-2 cursor-pointer font-mono text-[10px] text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white">
+                  <input 
+                    type="checkbox"
+                    checked={selectedPlatform.includes(platform)}
+                    onChange={() => toggleFilter(selectedPlatform, setSelectedPlatform, platform)}
+                    className="rounded-none border-zinc-300 dark:border-zinc-800 text-blue-600 focus:ring-0 w-3 h-3 bg-transparent accent-blue-600"
+                  />
+                  {platform}
+                </label>
+              ))}
+            </div>
 
-          {/* Verification Tiers */}
-          <div className="flex flex-col gap-2.5">
-            <h4 className="font-mono text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Verification</h4>
-            {[
-              { label: "Verified Publisher", value: "publisher" },
-              { label: "Community Verified", value: "community" }
-            ].map((tier) => (
-              <label key={tier.value} className="flex items-center gap-2 cursor-pointer font-mono text-[10px] text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white">
-                <input 
-                  type="checkbox"
-                  checked={selectedVerification.includes(tier.value)}
-                  onChange={() => toggleFilter(selectedVerification, setSelectedVerification, tier.value)}
-                  className="rounded-none border-zinc-300 dark:border-zinc-800 text-blue-600 focus:ring-0 w-3 h-3 bg-transparent accent-blue-600"
-                />
-                {tier.label}
-              </label>
-            ))}
+            {/* Verification Tiers */}
+            <div className="flex flex-col gap-2.5">
+              <h4 className="font-mono text-[10px] font-bold text-zinc-400 dark:text-zinc-500 uppercase tracking-wider">Verification</h4>
+              {[
+                { label: "Verified Publisher", value: "publisher" },
+                { label: "Community Verified", value: "community" }
+              ].map((tier) => (
+                <label key={tier.value} className="flex items-center gap-2 cursor-pointer font-mono text-[10px] text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white">
+                  <input 
+                    type="checkbox"
+                    checked={selectedVerification.includes(tier.value)}
+                    onChange={() => toggleFilter(selectedVerification, setSelectedVerification, tier.value)}
+                    className="rounded-none border-zinc-300 dark:border-zinc-800 text-blue-600 focus:ring-0 w-3 h-3 bg-transparent accent-blue-600"
+                  />
+                  {tier.label}
+                </label>
+              ))}
+            </div>
           </div>
 
         </div>

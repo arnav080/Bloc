@@ -5,7 +5,7 @@ import FaqAccordion from "@/components/FaqAccordion";
 import Link from "next/link";
 import { AsciiCanvas } from "@/components/AsciiCanvas";
 import Image from "next/image";
-import { Cpu, Box, Code2, Layers, Activity, FileCode2, Shield, GitPullRequest, BarChart3, CheckCircle } from "lucide-react";
+import { Cpu, Box, Code2, Layers, Activity, FileCode2, Shield } from "lucide-react";
 import TerminalDemo from "@/components/landing/TerminalDemo";
 import BuildShareRunSection from "@/components/landing/BuildShareRunSection";
 
@@ -66,19 +66,19 @@ const bentoRow2 = [
 
 const communityCards = [
   {
-    title: "GitOps YAML Submissions",
-    desc: "Store and version-control recipes inside public GitHub repositories. PR pipeline runs automated validation checks for schema safety.",
-    icon: <GitPullRequest className="w-5 h-5 text-blue-500" />
+    title: "Local AI Recipes",
+    desc: "Browse, customize, and share optimized llama.cpp recipes configured for different host hardware. Fully version-controlled and reproducible.",
+    link: "https://github.com/arnav080/Bloc/tree/main/recipes"
   },
   {
-    title: "Consensus-Driven Telemetry",
-    desc: "Verify speeds dynamically through opt-in CLI reports. Aggregating multi-run statistics creates an un-gameable hardware quality rank.",
-    icon: <BarChart3 className="w-5 h-5 text-blue-500" />
+    title: "Next.js Web Hub",
+    desc: "A collaborative registry and web interface to explore community-built setups, track model downloads, and manage remote endpoints.",
+    link: "https://github.com/arnav080/Bloc/tree/main/hub"
   },
   {
-    title: "Verified Namespace Badges",
-    desc: "Official creators and core organizations publish under dedicated profiles (like @qwen, @mistral) for guaranteed origin verification.",
-    icon: <CheckCircle className="w-5 h-5 text-blue-500" />
+    title: "Developer CLI Tool",
+    desc: "A lightweight terminal client to deploy, benchmark, and serve local AI environments instantly with a single offline command.",
+    link: "https://github.com/arnav080/Bloc/tree/main/cli"
   }
 ];
 
@@ -140,9 +140,9 @@ export default function Home() {
           {/* Section 2: Main Hero */}
           <div className="w-full min-h-[380px] flex flex-col items-center justify-center py-16 px-6 select-none">
             {/* Hero Heading */}
-            <h1 className="text-6xl md:text-7xl font-medium tracking-tight text-center max-w-5xl leading-[1.3] font-switzer text-black dark:text-white mb-8">
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-medium tracking-tight text-center max-w-5xl leading-[1.3] font-switzer text-black dark:text-white mb-8">
               <HighlightText>
-                The huggingface For <br /> Local AI Deployments.
+                The huggingface For <br className="hidden md:inline" /> Local AI Deployments.
               </HighlightText>
             </h1>
 
@@ -176,7 +176,7 @@ export default function Home() {
           </div>
 
           {/* Section 3: Single Row Partner Logos */}
-          <div className="w-full min-h-[72px] flex items-center justify-center gap-8 md:gap-12 py-3 px-6 overflow-hidden">
+          <div className="w-full min-h-[72px] flex flex-wrap items-center justify-center gap-x-8 gap-y-6 md:gap-x-12 py-5 px-6 overflow-hidden">
             {/* Alibaba Cloud */}
             <div className="group relative h-6 w-24 md:w-28 flex-shrink-0 grayscale hover:grayscale-0 opacity-60 dark:opacity-40 hover:opacity-100 dark:hover:opacity-100 transition-all duration-300">
               <Image 
@@ -309,7 +309,7 @@ export default function Home() {
         </p>        {/* Bento Grid */}
         <div className="flex flex-col gap-4 mt-8 w-full">
           {/* Row 1: 3 Columns */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full">
             {bentoRow1.map((item) => (
               <div key={item.title} className="relative w-full border border-zinc-300 dark:border-zinc-800 bg-[#f6f6f3]/50 dark:bg-[#171616]/50 rounded-none p-5 flex flex-col justify-between min-h-[160px]">
                 <div className="flex items-start justify-between gap-4">
@@ -328,7 +328,7 @@ export default function Home() {
           </div>
 
           {/* Row 2: 4 Columns */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
             {bentoRow2.map((item) => (
               <div key={item.title} className="relative w-full border border-zinc-300 dark:border-zinc-800 bg-[#f6f6f3]/50 dark:bg-[#171616]/50 rounded-none p-5 flex flex-col justify-between min-h-[160px]">
                 <div className="flex items-start justify-between gap-4">
@@ -497,9 +497,15 @@ export default function Home() {
         </p>
 
         {/* 3 Blocks in a row (Grid) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8 w-full">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-8 w-full">
           {communityCards.map((card) => (
-            <div key={card.title} className="group relative w-full border border-zinc-300 dark:border-zinc-800 bg-[#f6f6f3] dark:bg-[#171616] rounded-none min-h-[180px] p-6 flex flex-col justify-between transition-colors duration-200 hover:bg-[#ededeb] dark:hover:bg-[#201f1f] cursor-pointer">
+            <a 
+              key={card.title} 
+              href={card.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative w-full border border-zinc-300 dark:border-zinc-800 bg-[#f6f6f3] dark:bg-[#171616] rounded-none min-h-[180px] p-6 flex flex-col justify-between transition-all duration-200 hover:bg-[#ededeb] dark:hover:bg-[#201f1f] hover:border-zinc-400 dark:hover:border-zinc-700 cursor-pointer block text-current no-underline"
+            >
               {/* SVG Corner L-Brackets */}
               <svg 
                 viewBox="0 0 12 12" 
@@ -530,14 +536,16 @@ export default function Home() {
                 <h3 className="font-switzer font-semibold text-base text-black dark:text-white leading-tight">
                   {card.title}
                 </h3>
-                <div className="shrink-0 p-1 border border-zinc-200 dark:border-zinc-800 bg-[#f6f6f3] dark:bg-[#1c1b1b] rounded-none">
-                  {card.icon}
+                <div className="shrink-0">
+                  <svg className="w-6.5 h-6.5 text-white fill-white hover:text-zinc-200 transition-colors duration-200" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                  </svg>
                 </div>
               </div>
               <p className="font-switzer font-medium text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed mt-4">
                 {card.desc}
               </p>
-            </div>
+            </a>
           ))}
         </div>
       </div>

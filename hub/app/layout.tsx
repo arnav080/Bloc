@@ -21,7 +21,7 @@ const silkscreen = Silkscreen({
 });
 
 export const metadata: Metadata = {
-  title: "Bloc Hub - Local AI Model Registry",
+  title: "Bloc",
   description: "The Docker Hub for local AI models. Pull and run optimized LLMs instantly.",
   icons: {
     icon: "/images/favicon.ico",
@@ -43,7 +43,7 @@ export default function RootLayout({
         <link href="https://api.fontshare.com/v2/css?f[]=switzer@100,200,300,400,500,600,700,800,900&display=swap" rel="stylesheet" />
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
-        <RootProvider>
+        <RootProvider theme={{ defaultTheme: "system", enableSystem: true }}>
           <AuthProvider>
             <ThemeShortcut />
             <Navbar />

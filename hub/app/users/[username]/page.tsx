@@ -1320,8 +1320,8 @@ function RecipeCard({
       </div>
 
       {/* Deployment copy row */}
-      <div className="flex items-center justify-between gap-4 mt-6">
-        <div className="w-full max-w-xl">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-6">
+        <div className="flex-1 min-w-0 w-full sm:max-w-xl">
           <button 
             onClick={(e) => handleCopy(e, recipe.id)}
             className="w-full flex items-center justify-between px-3 h-8 bg-zinc-200/50 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 group/btn font-mono text-[10px] text-zinc-850 dark:text-zinc-200 cursor-pointer active:scale-[0.98] transition-all"
@@ -1334,9 +1334,9 @@ function RecipeCard({
         </div>
 
         {/* Telemetry statistics */}
-        <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-500 dark:text-zinc-400 select-none shrink-0">
+        <div className="flex items-center gap-1.5 font-mono text-[10px] text-zinc-500 dark:text-zinc-400 select-none shrink-0 self-end sm:self-auto">
           <Download className="w-3.5 h-3.5" />
-          <span>{recipe.telemetry.runs}</span>
+          <span>{recipe.telemetry.runs} runs</span>
         </div>
       </div>
     </div>

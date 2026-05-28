@@ -4,9 +4,27 @@ import { useState, useRef, useEffect } from "react";
 
 // 3D Cuboid SVG — shared between all three steps
 function Cuboid({ onClick }: { onClick: () => void }) {
+  const [isPressed, setIsPressed] = useState(false);
+
+  const handlePress = () => {
+    setIsPressed(true);
+    onClick();
+    setTimeout(() => {
+      setIsPressed(false);
+    }, 150);
+  };
+
+  const transformClasses = isPressed
+    ? "translate-x-0 translate-y-0"
+    : "-translate-x-3 -translate-y-3 md:translate-x-0 md:translate-y-0 md:group-hover:-translate-x-3 md:group-hover:-translate-y-3 active:translate-x-0 active:translate-y-0 group-active:translate-x-0 group-active:translate-y-0";
+
+  const shadowClasses = isPressed
+    ? "drop-shadow-[0_4px_6px_rgba(0,0,0,0.03)] dark:drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)]"
+    : "drop-shadow-[0_12px_24px_rgba(0,0,0,0.08)] dark:drop-shadow-[0_12px_24px_rgba(0,0,0,0.5)] md:drop-shadow-[0_4px_6px_rgba(0,0,0,0.03)] md:dark:drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)] md:group-hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.08)] md:dark:group-hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.5)]";
+
   return (
     <div
-      onClick={onClick}
+      onClick={handlePress}
       className="w-full mt-8 relative aspect-[320/220] min-h-[220px] group cursor-pointer select-none"
     >
       {/* 3D Socket Base (stationary) */}
@@ -30,14 +48,13 @@ function Cuboid({ onClick }: { onClick: () => void }) {
         </svg>
       </div>
 
-      {/* 3D Keycap */}
       <div
-        className="absolute inset-0 w-full h-full transform transition-all duration-300 group-hover:-translate-x-3 group-hover:-translate-y-3 active:translate-x-0 active:translate-y-0 ease-out z-10"
+        className={`absolute inset-0 w-full h-full transform transition-all duration-300 ease-out z-10 ${transformClasses}`}
         style={{ transitionTimingFunction: "cubic-bezier(0.34, 1.56, 0.64, 1)" }}
       >
         <svg
           viewBox="0 0 320 220"
-          className="w-full h-full drop-shadow-[0_4px_6px_rgba(0,0,0,0.03)] dark:drop-shadow-[0_4px_6px_rgba(0,0,0,0.3)] group-hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.08)] dark:group-hover:drop-shadow-[0_12px_24px_rgba(0,0,0,0.5)] transition-all duration-300"
+          className={`w-full h-full transition-all duration-300 ${shadowClasses}`}
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
         >
@@ -116,8 +133,16 @@ export default function BuildShareRunSection() {
         {STEPS.map((step, i) => (
           <div
             key={step.num}
-            onMouseEnter={() => setActiveStep(i + 1)}
-            onMouseLeave={() => setActiveStep(null)}
+            onMouseEnter={() => {
+              if (typeof window !== "undefined" && window.innerWidth >= 768) {
+                setActiveStep(i + 1);
+              }
+            }}
+            onMouseLeave={() => {
+              if (typeof window !== "undefined" && window.innerWidth >= 768) {
+                setActiveStep(null);
+              }
+            }}
             className={`flex flex-col items-start w-full transition-all duration-500 ease-in-out ${
               activeStep !== null && activeStep !== i + 1
                 ? "opacity-0 scale-[0.97] pointer-events-none"

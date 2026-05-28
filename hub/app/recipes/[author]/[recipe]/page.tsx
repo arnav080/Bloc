@@ -4,6 +4,8 @@ import { cache } from "react";
 import { registryRecipes, Recipe } from "@/lib/registry-data";
 import type { Metadata } from "next";
 import { supabase } from "@/lib/supabase";
+import DeleteRecipeButton from "./DeleteRecipeButton";
+import YamlCodeViewer from "./YamlCodeViewer";
 
 // Custom component to render the copy deployment console
 import CopyCommandBox from "./CopyCommandBox";
@@ -27,6 +29,31 @@ interface PageProps {
     author: string;
     recipe: string;
   }>;
+}
+
+function generateFallbackYaml(recipe: Recipe): string {
+  return `# ──────────────────────────────────────────────────────────────────
+#  BLOC RECIPE  ·  schema bloc/v1
+#  Auto-Generated Configuration Manifest
+# ──────────────────────────────────────────────────────────────────
+
+schema: "bloc/v1"
+
+metadata:
+  name: "${recipe.name}"
+  description: "${recipe.description || "Optimized local AI run parameters."}"
+
+model:
+  source: "${recipe.baseModel || "unknown"}"
+  quantization: "${recipe.quantization || "Q4_K_M"}"
+
+engine:
+  name: "llama.cpp"
+
+hardware:
+  min_vram: "${recipe.hardware.minVram}"
+  target_platform: "${recipe.hardware.targetPlatform}"
+`;
 }
 
 // React cache() deduplicates identical calls within the same request
@@ -79,6 +106,7 @@ const getRecipe = cache(async function getRecipe(
           runs: data.compat_builds?.length || 0,
           benchmarks: [],
         },
+        yamlContent: data.yaml_content || "",
       };
     }
   } catch (e) {
@@ -95,6 +123,9 @@ export default async function RecipeDetailPage(props: PageProps) {
   if (!recipe) {
     notFound();
   }
+
+  const isMock = registryRecipes.some((r) => r.id === recipe.id);
+  const yaml = recipe.yamlContent || generateFallbackYaml(recipe);
 
   return (
     <div className="max-w-4xl w-full mx-auto px-6 py-16 select-none">
@@ -123,22 +154,25 @@ export default async function RecipeDetailPage(props: PageProps) {
           <path d="M 0,12 L 0,0 L 12,0 L 12,1 L 4,1 Q 1,1 1,4 L 1,12 Z" />
         </svg>
 
-        <div className="flex items-center gap-2 mb-4">
-          <span className="font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 border border-zinc-300 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400">
-            {recipe.hardware.targetPlatform.toUpperCase()}
-          </span>
-          <span className="font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 border border-zinc-300 dark:border-zinc-800 bg-zinc-200 dark:bg-zinc-900 text-zinc-850 dark:text-zinc-200">
-            {recipe.hardware.minVram} VRAM
-          </span>
-          {recipe.verified !== "none" && (
-            <span className={`font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 font-bold ${
-              recipe.verified === "publisher"
-                ? "border border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                : "border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-            }`}>
-              {recipe.verified === "publisher" ? "Verified Org" : "Community Verified"}
+        <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 border border-zinc-300 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400">
+              {recipe.hardware.targetPlatform.toUpperCase()}
             </span>
-          )}
+            <span className="font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 border border-zinc-300 dark:border-zinc-800 bg-zinc-200 dark:bg-zinc-900 text-zinc-850 dark:text-zinc-200">
+              {recipe.hardware.minVram} VRAM
+            </span>
+            {recipe.verified !== "none" && (
+              <span className={`font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 font-bold ${
+                recipe.verified === "publisher"
+                  ? "border border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                  : "border border-emerald-500/20 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+              }`}>
+                {recipe.verified === "publisher" ? "Verified Org" : "Community Verified"}
+              </span>
+            )}
+          </div>
+          <DeleteRecipeButton creator={recipe.creator} recipeName={recipe.name} isMock={isMock} />
         </div>
 
         <h1 className="text-3xl md:text-4xl font-semibold tracking-tight font-switzer text-black dark:text-white mb-4 leading-tight">
@@ -155,10 +189,10 @@ export default async function RecipeDetailPage(props: PageProps) {
       </div>
 
       {/* Details Grid (Telemetry vs Configuration Table) */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start w-full">
         
         {/* Left Column: Spec Sheet (7/12) */}
-        <div className="md:col-span-7 flex flex-col gap-6">
+        <div className="lg:col-span-7 flex flex-col gap-6 font-switzer">
           <h2 className="text-xl font-semibold font-switzer tracking-tight text-black dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-2">
             Configuration Specifications
           </h2>
@@ -192,7 +226,7 @@ export default async function RecipeDetailPage(props: PageProps) {
         </div>
 
         {/* Right Column: Telemetry Performance (5/12) */}
-        <div className="md:col-span-5 flex flex-col gap-6">
+        <div className="lg:col-span-5 flex flex-col gap-6">
           <h2 className="text-xl font-semibold font-switzer tracking-tight text-black dark:text-white border-b border-zinc-200 dark:border-zinc-800 pb-2">
             Telemetry Benchmarks
           </h2>
@@ -218,6 +252,9 @@ export default async function RecipeDetailPage(props: PageProps) {
         </div>
 
       </div>
+
+      {/* YAML Manifest Viewer */}
+      <YamlCodeViewer yaml={yaml} filename={`${recipe.name}.yaml`} />
 
     </div>
   );
