@@ -346,7 +346,7 @@ export default function RegistryPage() {
   }, [allRecipes]);
 
   return (
-    <div className="max-w-6xl w-full mx-auto px-6 py-12 select-none">
+    <div className="max-w-6xl w-full mx-auto px-6 py-12">
       
       {/* Title */}
       <div className="w-full text-left mt-12 mb-16">
@@ -500,7 +500,7 @@ export default function RegistryPage() {
 
           {/* Breadcrumb Path (when a group model or GPU is selected) */}
           {(selectedModel || selectedGpu) && (
-            <div className="flex items-center gap-2 font-mono text-[10px] text-zinc-400 dark:text-zinc-500 py-1 select-none">
+            <div className="flex items-center gap-2 font-mono text-[10px] text-zinc-400 dark:text-zinc-500 py-1">
               <button 
                 onClick={() => {
                   setSelectedModel(null);
@@ -613,7 +613,7 @@ export default function RegistryPage() {
           {((viewMode === "default") || (viewMode === "model" && selectedModel) || (viewMode === "gpu" && selectedGpu)) && (
             <>
               {filteredRecipes.length === 0 ? (
-                <div className="w-full border border-dashed border-zinc-300 dark:border-zinc-800 bg-[#f6f6f3]/30 dark:bg-[#171616]/30 py-16 text-center rounded-none select-none">
+                <div className="w-full border border-dashed border-zinc-300 dark:border-zinc-800 bg-[#f6f6f3]/30 dark:bg-[#171616]/30 py-16 text-center rounded-none">
                   <p className="font-mono text-xs text-zinc-400 dark:text-zinc-500">No matching model recipes found in this view.</p>
                 </div>
               ) : (

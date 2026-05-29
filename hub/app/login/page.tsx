@@ -40,7 +40,7 @@ function LoginContent() {
   };
 
   return (
-    <div className="flex-grow flex flex-col items-center justify-center p-6 min-h-[80vh] relative select-none">
+    <div className="flex-grow flex flex-col items-center justify-center p-6 min-h-[80vh] relative">
       
       {/* Login Box */}
       <div className="relative w-full max-w-md border border-zinc-300 dark:border-zinc-800 bg-[#f6f6f3] dark:bg-[#171616] p-8 md:p-10 rounded-none shadow-xl">

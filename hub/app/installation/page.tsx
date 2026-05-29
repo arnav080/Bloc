@@ -63,7 +63,7 @@ export default function InstallationPage() {
   };
 
   return (
-    <div className="max-w-4xl w-full mx-auto px-6 py-16 select-none pt-24">
+    <div className="max-w-4xl w-full mx-auto px-6 py-16 pt-24">
       
       {/* Back link */}
       <Link href="/registry" className="inline-flex items-center gap-1.5 font-mono text-[10px] text-zinc-400 dark:text-zinc-500 hover:text-black dark:hover:text-white transition-colors mb-12">

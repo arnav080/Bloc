@@ -238,7 +238,7 @@ export default async function RecipeDetailPage(props: PageProps) {
     : { total_runs: 0, success_rate: 0, benchmarks: [] };
 
   return (
-    <div className="max-w-4xl w-full mx-auto px-6 py-16 select-none">
+    <div className="max-w-4xl w-full mx-auto px-6 py-16">
       
       {/* Back to Registry */}
       <Link href="/registry" className="inline-flex items-center gap-1.5 font-mono text-[10px] text-zinc-400 dark:text-zinc-500 hover:text-black dark:hover:text-white transition-colors mb-12">

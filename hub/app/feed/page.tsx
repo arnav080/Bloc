@@ -239,7 +239,7 @@ export default function FeedPage() {
   // unauthenticated view (Login Gate)
   if (!user) {
     return (
-      <div className="flex-grow flex flex-col items-center justify-center p-6 min-h-[85vh] relative select-none">
+      <div className="flex-grow flex flex-col items-center justify-center p-6 min-h-[85vh] relative">
         {/* Grid Background */}
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none -z-10" />
 
@@ -291,7 +291,7 @@ export default function FeedPage() {
   const feedRecipes = dbFeedRecipes;
 
   return (
-    <div className="max-w-4xl w-full mx-auto px-6 py-16 pt-24 min-h-screen relative select-none">
+    <div className="max-w-4xl w-full mx-auto px-6 py-16 pt-24 min-h-screen relative">
       
       {/* Grid Background */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808005_1px,transparent_1px),linear-gradient(to_bottom,#80808005_1px,transparent_1px)] bg-[size:14px_24px] pointer-events-none -z-10" />

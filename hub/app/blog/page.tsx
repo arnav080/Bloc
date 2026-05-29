@@ -21,7 +21,7 @@ export default function BlogIndex() {
   );
 
   return (
-    <div className="max-w-6xl w-full mx-auto px-6 py-12 select-none">
+    <div className="max-w-6xl w-full mx-auto px-6 py-12">
       
       {/* Header Section */}
       <div className="w-full text-left mt-12 mb-16">

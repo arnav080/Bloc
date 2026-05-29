@@ -34,7 +34,7 @@ export default function FaqAccordion() {
   ];
 
   return (
-    <div className="w-full flex flex-col gap-4 font-switzer select-none">
+    <div className="w-full flex flex-col gap-4 font-switzer">
       {faqs.map((item, index) => {
         const isOpen = openIndex === index;
 

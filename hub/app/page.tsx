@@ -111,7 +111,7 @@ export default function Home() {
           </svg>
 
           {/* Section 1: Single Line Feature List */}
-          <div className="w-full min-h-[48px] flex flex-wrap items-center justify-center gap-3 sm:gap-6 py-3 px-4 text-center text-[10px] sm:text-xs font-mono text-zinc-500 dark:text-zinc-400 select-none">
+          <div className="w-full min-h-[48px] flex flex-wrap items-center justify-center gap-3 sm:gap-6 py-3 px-4 text-center text-[10px] sm:text-xs font-mono text-zinc-500 dark:text-zinc-400">
             <span>
               <strong className="text-black dark:text-white font-bold">1-command</strong> deployments
             </span>
@@ -138,7 +138,7 @@ export default function Home() {
           </div>
 
           {/* Section 2: Main Hero */}
-          <div className="w-full min-h-[380px] flex flex-col items-center justify-center py-16 px-6 select-none">
+          <div className="w-full min-h-[380px] flex flex-col items-center justify-center py-16 px-6">
             {/* Hero Heading */}
             <h1 className="text-4xl sm:text-5xl md:text-7xl font-medium tracking-tight text-center max-w-5xl leading-[1.3] font-switzer text-black dark:text-white mb-8">
               <HighlightText>
@@ -287,7 +287,7 @@ export default function Home() {
       </div>
 
       {/* Heading and Subheading Section (Left-aligned) */}
-      <div className="w-full text-left mt-44 px-2 select-none self-start">
+      <div className="w-full text-left mt-44 px-2 self-start">
         <h2 className="text-4xl md:text-5xl font-medium tracking-tight font-switzer text-black dark:text-white mb-6">
           <HighlightText>Build, Share, Run</HighlightText> – instantly
         </h2>
@@ -300,7 +300,7 @@ export default function Home() {
       </div>
 
       {/* Fourth Section: Everything needed to run local AI */}
-      <div className="w-full text-left mt-44 px-2 select-none self-start">
+      <div className="w-full text-left mt-44 px-2 self-start">
         <h2 className="text-4xl md:text-5xl font-medium tracking-tight font-switzer text-black dark:text-white mb-6">
           Everything needed to run <HighlightText>local AI.</HighlightText>
         </h2>
@@ -349,7 +349,7 @@ export default function Home() {
       </div>
 
       {/* Fifth Section: Ready-to-deploy local AI setups */}
-      <div className="w-full text-left mt-44 px-2 select-none self-start">
+      <div className="w-full text-left mt-44 px-2 self-start">
         <h2 className="text-4xl md:text-5xl font-medium tracking-tight font-switzer text-black dark:text-white mb-6">
           <HighlightText>Ready-to-deploy</HighlightText> local AI setups
         </h2>
@@ -488,7 +488,7 @@ export default function Home() {
       </div>
 
       {/* Sixth Section: Built by the local AI community */}
-      <div className="w-full text-left mt-44 px-2 select-none self-start">
+      <div className="w-full text-left mt-44 px-2 self-start">
         <h2 className="text-4xl md:text-5xl font-medium tracking-tight font-switzer text-black dark:text-white mb-6">
           Built by the local AI <HighlightText>community.</HighlightText>
         </h2>
@@ -551,7 +551,7 @@ export default function Home() {
       </div>
 
       {/* Call-to-Action Section */}
-      <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-8 mt-44 px-2 select-none self-start">
+      <div className="w-full flex flex-col md:flex-row md:items-center justify-between gap-8 mt-44 px-2 self-start">
         {/* Left Side: Heading */}
         <div className="flex-grow text-left max-w-3xl">
           <h2 className="text-4xl md:text-5xl font-medium tracking-tight font-switzer text-black dark:text-white leading-tight">
@@ -567,7 +567,7 @@ export default function Home() {
       </div>
 
       {/* FAQ Section */}
-      <div className="w-full grid grid-cols-1 md:grid-cols-12 gap-8 text-left mt-44 px-2 select-none self-start">
+      <div className="w-full grid grid-cols-1 md:grid-cols-12 gap-8 text-left mt-44 px-2 self-start">
         {/* Left Column: Heading */}
         <div className="md:col-span-4">
           <h2 className="text-3xl md:text-4xl font-medium tracking-tight font-switzer text-black dark:text-white">

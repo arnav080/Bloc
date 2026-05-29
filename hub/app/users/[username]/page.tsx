@@ -662,7 +662,7 @@ export default function UserProfilePage() {
 
 
   return (
-    <div className="max-w-4xl w-full mx-auto px-6 py-16 select-none pt-24 min-h-screen">
+    <div className="max-w-4xl w-full mx-auto px-6 py-16 pt-24 min-h-screen">
       
 
       {/* Back to Registry */}

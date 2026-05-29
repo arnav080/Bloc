@@ -28,7 +28,7 @@ export default async function BlogPostPage(props: {
       </Link>
 
       {/* Post Header */}
-      <header className="mb-12 border-b border-zinc-200 dark:border-zinc-800/80 pb-8 select-none">
+      <header className="mb-12 border-b border-zinc-200 dark:border-zinc-800/80 pb-8">
         <div className="flex items-center gap-2 mb-4">
           <span className="font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 border border-zinc-300 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400">
             {page.data.tag || "Systems"}

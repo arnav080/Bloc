@@ -99,7 +99,7 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="flex-grow flex flex-col items-center justify-center p-6 min-h-[85vh] relative select-none">
+    <div className="flex-grow flex flex-col items-center justify-center p-6 min-h-[85vh] relative">
       
       <div className="relative w-full max-w-xl border border-zinc-300 dark:border-zinc-800 bg-[#f6f6f3] dark:bg-[#171616] p-8 md:p-10 rounded-none shadow-xl">
         {/* SVG Corner L-Brackets */}
