@@ -1,0 +1,118 @@
+---
+title: Commands Reference
+description: Complete command-line interface reference for the Bloc CLI.
+---
+
+The Bloc CLI is a unified terminal client used to search, deploy, and manage local AI environment runs.
+
+## Usage
+
+```bash
+bloc [command] [flags]
+```
+
+To see help options for any command, run:
+```bash
+bloc [command] --help
+```
+
+---
+
+## Registry & Authentication Commands
+
+### `bloc login`
+Authenticates your local terminal session with your Bloc Hub account using GitHub OAuth device flow.
+
+```bash
+bloc login
+```
+
+- **Storage**: Credentials are saved securely on your local filesystem under `~/.config/bloc/auth.json`.
+- **Requirements**: Access to a web browser to confirm the GitHub verification code.
+
+### `bloc logout`
+Clears your locally stored Hub credentials and terminates the session.
+
+```bash
+bloc logout
+```
+
+### `bloc search [query]`
+Search the public recipe registry hosted on `bloc-theta.vercel.app`.
+
+```bash
+bloc search deepseek --vram 8GB --platform cuda
+```
+
+- **Arguments**: Optional string query to match recipe names, descriptions, or tags.
+- **Flags**:
+  - `--vram <value>`: Filter results by minimum VRAM requirements (e.g. `8GB`, `16GB`, `Unified`).
+  - `--platform <value>`: Filter by platform: `cuda` (NVIDIA), `metal` (macOS), `rocm` (AMD), or `cpu`.
+  - `--limit <number>`: Limit the number of search results displayed (default: `20`).
+
+---
+
+## Deployment Commands
+
+### `bloc deploy [author/recipe]`
+Fetches a recipe manifest from the registry, downloads the required GGUF weights, validates your local llama.cpp environment, runs pre-run setup scripts, and starts the API server.
+
+```bash
+bloc deploy arnav/qwen3-30b-moe-8gb-cpu-offload
+```
+
+- **Arguments**: Required recipe path in the format `{username}/{recipe-name}`.
+- **Flags**:
+  - `--dry-run`: Build and print the complete execution command (including all computed `llama-server` flags) without actually launching the process.
+  - `--no-telemetry`: Disable session performance and metrics reporting for this run.
+
+---
+
+## Cache & System Management
+
+### `bloc models`
+List all locally cached model weight files (GGUFs) downloaded by the CLI. Displays filenames, sizes in gigabytes, download dates, and total cache folder size.
+
+```bash
+bloc models
+```
+
+### `bloc models clear`
+Delete all cached model weights to reclaim disk space.
+
+```bash
+bloc models clear
+```
+
+- Prompts for confirmation before deleting files.
+
+### `bloc telemetry [on|off|show]`
+Configure or check anonymous telemetry reporting.
+
+```bash
+bloc telemetry show
+```
+
+- **Arguments**:
+  - `on`: Enable telemetry.
+  - `off`: Disable telemetry.
+  - `show`: Print current configuration.
+- **Environment Override**: You can also set `BLOC_NO_TELEMETRY=1` in your environment variables to disable all telemetry permanently.
+
+---
+
+## System Commands
+
+### `bloc update`
+Atomically check for and update your `bloc` CLI executable to the latest release from the GitHub repository.
+
+```bash
+bloc update
+```
+
+### `bloc version`
+Print the currently installed Bloc CLI version, build commit, and build date.
+
+```bash
+bloc version
+```

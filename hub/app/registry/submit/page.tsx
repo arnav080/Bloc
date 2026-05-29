@@ -380,7 +380,7 @@ export default function RecipeSubmitPage() {
 
         <div className="flex flex-col gap-2 shrink-0 w-full md:w-44">
           <Link
-            href="/docs"
+            href="/docs/recipes"
             target="_blank"
             className="flex items-center justify-center gap-2 h-9 w-full border border-dashed border-zinc-400 dark:border-zinc-700 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-900/40 dark:hover:bg-zinc-900/80 font-mono text-[9px] uppercase font-bold tracking-wider cursor-pointer text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-zinc-250 transition-colors rounded-none"
           >

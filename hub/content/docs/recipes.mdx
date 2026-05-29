@@ -1,0 +1,188 @@
+---
+title: Creating Recipes
+description: Learn how to define, test, and publish custom model deployment blueprints.
+---
+
+A Bloc recipe is a YAML configuration manifest that describes how to run a local AI model using `llama.cpp` (or other engines) on target hardware. It is not the weights themselves; it is the **configuration recipe** telling the Bloc CLI exactly how to download, optimize, and serve a model.
+
+---
+
+## The Two-Layer Design
+
+Every Bloc recipe YAML has two distinct layers serving different purposes:
+
+1. **Registry Metadata (Hub Website)**: Read by the Bloc Hub website to power search filters (VRAM, platform, model size), registry cards, and recipe pages.
+2. **Engine Configuration (CLI Execution)**: Passed verbatim to the Bloc CLI. The CLI translates these structured fields into engine arguments (e.g. `llama-server` flags) and environment setups.
+
+---
+
+## Full Schema Reference
+
+### `schema` (required)
+Tells the Bloc CLI which parser version to use for compatibility.
+```yaml
+schema: "bloc/v1"
+```
+
+### `extends` (optional)
+Inherit fields from another recipe and override only what differs. Great for multi-VRAM variants of the same model.
+```yaml
+extends: "arnav/qwen3-base"
+```
+
+### `metadata` (required)
+```yaml
+metadata:
+  name: "qwen3-30b-moe-8gb-cpu-offload"
+  description: "What model, what hardware, what result."
+  tags: [moe, long-context, 8gb, cuda, reasoning]
+  author_notes: |
+    Multi-line developer notes. trade-offs, experiments, and tips.
+```
+* **name**: Unique per-user lowercase identifier (letters, numbers, hyphens). Combined with your username, it forms the unique ID: `{username}/{name}`.
+* **description**: Brief summary displayed on cards.
+* **tags**: Arrays used for search filters (e.g., `moe`, `cuda`, `metal`, `reasoning`).
+
+### `model` (required)
+Describes the GGUF model files and download sources.
+```yaml
+model:
+  source: "huggingface:Qwen/Qwen3-30B-A3B"
+  gguf_repo: "huggingface:bartowski/Qwen_Qwen3-30B-A3B-GGUF"
+  file: "Qwen_Qwen3-30B-A3B-Q4_K_M.gguf"
+  download_url: "https://huggingface.co/bartowski/Qwen_Qwen3-30B-A3B-GGUF/resolve/main/Qwen_Qwen3-30B-A3B-Q4_K_M.gguf"
+  quantization: "Q4_K_M"
+  size_gb: 17.2
+  parameters: "30B"
+  architecture: "MoE"
+```
+* **source**: The upstream base model on Hugging Face (`huggingface:org/repo`).
+* **file**: Precise GGUF filename for deterministic download caching.
+* **download_url**: Direct HTTPS GGUF download link.
+
+### `engine` (required)
+```yaml
+engine:
+  name: "llama.cpp"
+  variant: null
+  tested_commit: "b5350"
+```
+* **tested_commit**: The short git hash of `llama.cpp` this was verified against. The CLI checks this against the user's binary to alert them of version shifts.
+
+### `hardware` (required)
+Specifies minimum recommendations for running the configuration.
+```yaml
+hardware:
+  min_vram: "8GB" # options: 4GB, 8GB, 12GB, 16GB, 24GB, Unified (Mac)
+  target_platform: "cuda" # options: cuda, metal, rocm, cpu, vulkan
+  gpu_count: 1
+  recommended_ram: "32GB"
+```
+
+---
+
+## Engine Configuration (`engine_config`)
+
+These fields map directly to `llama-server` flags during deployment execution. Fields set to `null` are ignored.
+
+> [!NOTE]
+> **The Explicit Field Rule**: Always define options explicitly rather than relying on default values, ensuring your recipes remain compatible if llama.cpp updates its defaults.
+
+### Context & Batching
+* **`ctx_size`**: Size of the KV cache/context window. Memory scales linearly with this.
+* **`batch_size`**: Parallelism of prompt processing (`-b`). High numbers speed up prompt prefill but increase peak memory.
+* **`ubatch_size`**: Micro-batch size (`-ub`). Halving this (e.g., from `512` to `256`) can save up to `~1.4GB` VRAM during prefill on tight setups.
+
+### GPU Offloading
+* **`gpu_layers`**: Number of layers loaded into VRAM (`-ngl`). Use `99` for full GPU offload.
+* **`split_mode`**: Multi-GPU splitting strategy (`layer`, `row`, or `none`).
+* **`tensor_split`**: Ratio/split weight across multiple GPUs (e.g. `58,42`).
+* **`flash_attn`**: Reduces VRAM usage linearly with context depth. Highly recommended on compatible hardware.
+
+### Mixture-of-Experts (MoE)
+* **`n_cpu_moe`**: Number of active experts to offload to system RAM.
+  * `99` = All experts on CPU (maximum context, lowest VRAM usage, ~10% slower speed).
+  * `32` = Partial expert offload (faster inference, uses more VRAM).
+
+### KV Cache Quantization
+* **`cache_type_k`** / **`cache_type_v`**: Quantization format for key/value matrices.
+  * `f16`: Default, full precision, highest memory.
+  * `q8_0`: Near-perfect quality, ~50% VRAM reduction (recommended default).
+  * `q4_0`: Aggressive VRAM saving (great for deep chat context; may cause minor reasoning issues).
+
+### Speculative Decoding
+* **`spec_type`**: Speculative decoding type (`draft` or `draft-mtp` for native multi-token prediction).
+* **`spec_draft_model`**: Path or HF identifier for the draft model.
+
+### System Settings
+* **`threads`**: Number of physical CPU cores (do not include logical cores/threads to avoid CPU lockups).
+* **`mlock`**: Locks weights in physical RAM to prevent OS swapping/latency spikes.
+* **`jinja`**: Enable Jinja2 chat templates (required for modern chat formatting like Qwen/Llama).
+* **`extra_args`**: Escape hatch array for custom/unsupported flags:
+  ```yaml
+  extra_args:
+    - "--cuda-graphs"
+  ```
+
+---
+
+## Pre-Run Hooks (`pre_run`)
+
+Optional system-level operations executed before the engine launches. The CLI will request confirmation from the user before executing commands.
+
+```yaml
+pre_run:
+  env:
+    CUDA_VISIBLE_DEVICES: "0,1"
+  commands:
+    - "sudo nvidia-smi -pl 250" # power limits GPU for efficiency
+```
+
+---
+
+## Common Configuration Patterns
+
+### Single GPU Budget Setup (8GB VRAM)
+```yaml
+hardware:
+  min_vram: "8GB"
+  target_platform: "cuda"
+engine_config:
+  gpu_layers: 28
+  ctx_size: 8192
+  flash_attn: true
+  cache_type_k: "q8_0"
+  cache_type_v: "q8_0"
+  threads: 8
+```
+
+### Apple Silicon (Metal Unified Memory)
+```yaml
+hardware:
+  min_vram: "Unified"
+  target_platform: "metal"
+engine_config:
+  gpu_layers: 99
+  ctx_size: 32768
+  flash_attn: true
+  cache_type_k: "q8_0"
+  cache_type_v: "q8_0"
+  threads: 6 # matched to physical performance cores
+  mlock: false
+  jinja: true
+```
+
+### MoE Offloading (Large Model, Low VRAM)
+```yaml
+hardware:
+  min_vram: "8GB"
+  recommended_ram: "32GB"
+engine_config:
+  gpu_layers: 99
+  n_cpu_moe: 99 # moves experts to system RAM
+  ctx_size: 262144
+  flash_attn: true
+  cache_type_k: "q4_0"
+  cache_type_v: "q4_0"
+  jinja: true
+```

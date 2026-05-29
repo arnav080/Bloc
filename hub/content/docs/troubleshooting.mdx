@@ -1,0 +1,41 @@
+---
+title: Troubleshooting
+description: Debug common issues with local model deployments and hardware configurations.
+---
+
+Explore resolutions for common error states and setup issues.
+
+### GPU Detection Failures
+
+If the CLI fails to detect your accelerator (CUDA or Metal), run the capability diagnostic checks:
+
+#### macOS
+Ensure you have the Xcode command-line tools active:
+```bash
+xcode-select -p
+```
+
+#### Linux & Windows
+Verify that your drivers are up-to-date and the CUDA runtime is accessible:
+```bash
+nvidia-smi
+```
+
+---
+
+### Port Conflicts
+
+If the API fails to start, it's typically because port `8080` (default) is already in use. You can pass a custom port during deployment:
+
+```bash
+bloc deploy arnav/qwen-3.5-9b-super --port 9000
+```
+
+---
+
+### CPU Fallback Bottlenecks
+
+Running models on CPU is slower. If you are forced onto CPU fallback:
+* Ensure your processor supports **AVX2** instructions.
+* Free up system RAM by closing resource-heavy background processes.
+* Select recipes using smaller quantizations (e.g. `Q4_K_M`) to reduce memory pressure.

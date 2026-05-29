@@ -25,11 +25,13 @@ export default function ShortcutButton({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Avoid triggering shortcut when user is typing in form inputs
+      // Avoid triggering shortcut when user is typing in form inputs, textareas, or code editors
       if (
         document.activeElement &&
         (document.activeElement.tagName === "INPUT" ||
           document.activeElement.tagName === "TEXTAREA" ||
+          document.activeElement.closest(".monaco-editor") ||
+          document.activeElement.getAttribute("role") === "textbox" ||
           (document.activeElement as HTMLElement).isContentEditable)
       ) {
         return;

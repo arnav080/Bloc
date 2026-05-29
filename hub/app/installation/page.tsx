@@ -14,28 +14,49 @@ export default function InstallationPage() {
     macos: [
       {
         label: "Via Homebrew (Recommended)",
-        cmd: "brew install bloc-hub/tap/bloc"
+        cmd: "brew tap arnav080/bloc && brew install bloc"
       },
       {
-        label: "Via Shell Script",
-        cmd: "curl -fsSL https://bloc.dev/install.sh | sh"
+        label: "Via Manual Tarball (Apple Silicon / M-Series)",
+        cmd: "curl -L https://github.com/arnav080/Bloc/releases/download/v0.1.0/bloc_darwin_arm64.tar.gz | tar -xz && sudo mv bloc /usr/local/bin/"
+      },
+      {
+        label: "Via Manual Tarball (Intel Core)",
+        cmd: "curl -L https://github.com/arnav080/Bloc/releases/download/v0.1.0/bloc_darwin_amd64.tar.gz | tar -xz && sudo mv bloc /usr/local/bin/"
       }
     ],
     linux: [
       {
-        label: "Via Shell Script",
-        cmd: "curl -fsSL https://bloc.dev/install.sh | sh"
+        label: "Debian / Ubuntu (AMD64 .deb)",
+        cmd: "wget https://github.com/arnav080/Bloc/releases/download/v0.1.0/bloc_0.1.0_linux_amd64.deb && sudo dpkg -i bloc_0.1.0_linux_amd64.deb"
+      },
+      {
+        label: "RedHat / Fedora / CentOS (AMD64 .rpm)",
+        cmd: "sudo dnf install https://github.com/arnav080/Bloc/releases/download/v0.1.0/bloc_0.1.0_linux_amd64.rpm"
+      },
+      {
+        label: "Via Manual Tarball (AMD64)",
+        cmd: "curl -L https://github.com/arnav080/Bloc/releases/download/v0.1.0/bloc_linux_amd64.tar.gz | tar -xz && sudo mv bloc /usr/local/bin/"
       }
     ],
     windows: [
       {
-        label: "Via PowerShell (Run as Administrator)",
-        cmd: "irm https://bloc.dev/install.ps1 | iex"
+        label: "Windows Installer (Direct MSI Download)",
+        cmd: "https://github.com/arnav080/Bloc/releases/download/v0.1.0/bloc_windows_amd64.msi"
+      },
+      {
+        label: "Via PowerShell (Manual Zip Setup)",
+        cmd: "Invoke-WebRequest -Uri \"https://github.com/arnav080/Bloc/releases/download/v0.1.0/bloc_windows_amd64.zip\" -OutFile \"bloc.zip\"; Expand-Archive \"bloc.zip\" -DestinationPath \"$env:USERPROFILE\\bin\"; [Environment]::SetEnvironmentVariable(\"Path\", $env:Path + \";$env:USERPROFILE\\bin\", \"User\")"
       }
     ]
   };
 
   const handleCopy = (text: string) => {
+    // If it's the MSI URL, redirect user to download it
+    if (text.startsWith("http")) {
+      window.open(text, "_blank");
+      return;
+    }
     navigator.clipboard.writeText(text);
     setCopiedText(text);
     setTimeout(() => setCopiedText(null), 1500);
@@ -108,7 +129,7 @@ export default function InstallationPage() {
               >
                 <span className="truncate select-text">{item.cmd}</span>
                 <span className="flex-shrink-0 ml-4 font-mono text-[9px] uppercase font-bold text-zinc-400 group-hover/btn:text-blue-600 dark:group-hover/btn:text-blue-400 transition-colors">
-                  {copiedText === item.cmd ? "Copied!" : "Copy"}
+                  {copiedText === item.cmd ? "Copied!" : item.cmd.startsWith("http") ? "Download" : "Copy"}
                 </span>
               </button>
             </div>
@@ -132,15 +153,15 @@ export default function InstallationPage() {
               Verify Installation
             </h3>
             <p className="font-switzer font-medium text-xs text-zinc-500 dark:text-zinc-400 leading-relaxed">
-              Confirm that the paths were correctly configured by querying the CLI utility version.
+              Confirm that the paths were correctly configured by querying the CLI help menu.
             </p>
           </div>
           <button 
-            onClick={() => handleCopy("bloc --version")}
+            onClick={() => handleCopy("bloc --help")}
             className="w-full flex items-center justify-between px-2 h-7 bg-zinc-200/50 dark:bg-zinc-900/50 hover:bg-zinc-200 dark:hover:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 font-mono text-[9px] text-zinc-800 dark:text-zinc-200 cursor-pointer mt-4"
           >
-            <span>bloc --version</span>
-            <span className="text-zinc-400 font-bold uppercase">{copiedText === "bloc --version" ? "Copied" : "Copy"}</span>
+            <span>bloc --help</span>
+            <span className="text-zinc-400 font-bold uppercase">{copiedText === "bloc --help" ? "Copied" : "Copy"}</span>
           </button>
         </div>
 

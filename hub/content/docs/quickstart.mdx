@@ -1,0 +1,95 @@
+---
+title: Quickstart
+description: Get up and running with your first local AI model deployment in under 5 minutes.
+---
+
+This guide walks you through authenticating, searching the registry, deploying an optimized model, and querying the local server.
+
+---
+
+## Step 1: Verify Installation
+
+Ensure the `bloc` CLI utility is installed and accessible:
+```bash
+bloc version
+```
+This should print the version number (e.g. `v0.1.0`) and build date.
+
+---
+
+## Step 2: Authenticate with the Hub
+
+Log in to link your terminal session with your Bloc Hub profile. This lets you access your custom recipe configurations and publish new recipes:
+
+```bash
+bloc login
+```
+1. The CLI will output a unique verification code and open your browser to the GitHub OAuth authorization page.
+2. Paste the code and authorize the application.
+3. Your secure token will be stored locally in `~/.config/bloc/auth.json`.
+
+---
+
+## Step 3: Find a Model Recipe
+
+Search the public registry for a recipe optimized for your hardware. For example, let's search for the Qwen3 model family:
+
+```bash
+bloc search qwen3
+```
+
+You can narrow your search by specifying VRAM and platform constraints:
+```bash
+bloc search qwen3 --vram 8GB --platform cuda
+```
+
+Copy the recipe identifier (e.g. `arnav/qwen3-7b-budget-beast`) for the next step.
+
+---
+
+## Step 4: Deploy and Serve
+
+Deploy the selected recipe. The CLI will download the weights (if they are not already cached in your local `~/.cache/bloc` directory), configure the llama.cpp server flags, and boot up the endpoint:
+
+```bash
+bloc deploy arnav/qwen3-7b-budget-beast
+```
+
+> [!NOTE]
+> If the recipe contains `pre_run` system setup commands (like power-limiting commands), the CLI will display them and ask for your explicit confirmation (`y/N`) before running.
+
+Once the engine finishes loading model layers into memory, it will start a local API server (by default at `http://127.0.0.1:8080`).
+
+---
+
+## Step 5: Query Your Local Model
+
+The API server runs an OpenAI-compatible endpoint. You can test it from another terminal window using `curl`:
+
+```bash
+curl http://localhost:8080/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -d '{
+    "messages": [
+      {"role": "user", "content": "Write a python function to check if a number is prime."}
+    ]
+  }'
+```
+
+You can also point any OpenAI-compatible front-end UI (like Chatbox, SillyTavern, or local coding assistants) to `http://localhost:8080/v1` to interact with the model.
+
+---
+
+## Step 6: Manage Cached Weights
+
+Model weights are large. You can inspect your cached GGUFs at any time to check disk consumption:
+
+```bash
+bloc models
+```
+
+To free up space, run the clear command to purge all downloaded model files:
+```bash
+bloc models clear
+```
+*(Prompts for confirmation before deleting).*

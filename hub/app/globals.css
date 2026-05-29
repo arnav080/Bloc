@@ -198,15 +198,54 @@ html {
   width: 100vw;
   height: 100dvh;
   overflow: hidden;
+  padding-top: 0px !important; /* Keep container at top: 0 so backgrounds/borders touch the navbar */
+  --fd-nav-height: 48px !important;
+  --fd-header-height: 48px !important;
 }
-#nd-docs-layout main {
-  height: 100dvh !important;
+#nd-docs-layout aside,
+#nd-docs-layout .fd-sidebar {
+  top: 48px !important; /* Sidebar container touches the bottom of 48px navbar */
+  height: calc(100dvh - 48px) !important;
+  padding-top: 16px !important; /* Sidebar content starts cleanly below the navbar */
+}
+#nd-docs-layout .fd-toc {
+  top: 48px !important; /* TOC container touches the bottom of 48px navbar */
+  height: calc(100dvh - 48px) !important;
+  padding-top: 72px !important; /* Align "On this page" baseline with the main text heading */
+}
+#nd-docs-layout main,
+#nd-docs-layout [grid-area="main"] {
+  height: 100% !important;
   overflow: hidden !important;
+  padding-top: 80px !important; /* Push main content down to leave a beautiful 32px gap below the navbar */
 }
 
 /* Ensure the main page container in Fumadocs is independently scrollable */
 #nd-docs-layout > [grid-area="main"],
 #nd-docs-layout > main,
-#nd-docs-layout > article {
+#nd-docs-layout > article,
+#nd-docs-layout article {
   overflow-y: auto !important;
+  overflow-x: hidden !important; /* Remove horizontal scroll options */
+  padding-top: 80px !important; /* Force vertical gap below the custom navbar on the scrollable container itself */
+}
+
+/* Hide default scrollbars for sidebar, TOC, and main content areas inside docs layout */
+#nd-docs-layout aside,
+#nd-docs-layout article,
+#nd-docs-layout main,
+#nd-docs-layout [grid-area="main"],
+#nd-docs-layout .fd-sidebar,
+#nd-docs-layout .fd-toc {
+  scrollbar-width: none !important; /* Firefox */
+  -ms-overflow-style: none !important;  /* IE and Edge */
+}
+
+#nd-docs-layout aside::-webkit-scrollbar,
+#nd-docs-layout article::-webkit-scrollbar,
+#nd-docs-layout main::-webkit-scrollbar,
+#nd-docs-layout [grid-area="main"]::-webkit-scrollbar,
+#nd-docs-layout .fd-sidebar::-webkit-scrollbar,
+#nd-docs-layout .fd-toc::-webkit-scrollbar {
+  display: none !important; /* Chrome, Safari, Opera */
 }

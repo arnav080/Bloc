@@ -1,5 +1,14 @@
 {
   "pages": [
-    "index"
+    "---Get started---",
+    "index",
+    "quickstart",
+    "installation",
+    "---Using Bloc---",
+    "commands",
+    "recipes",
+    "troubleshooting",
+    "---Concepts---",
+    "how-bloc-works"
   ]
 }

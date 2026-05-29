@@ -34,11 +34,13 @@ export default function ThemeShortcut() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Avoid triggering theme toggle when user is typing in form fields or inputs
+      // Avoid triggering theme toggle when user is typing in form fields, inputs, or code editors
       if (
         document.activeElement &&
         (document.activeElement.tagName === "INPUT" ||
           document.activeElement.tagName === "TEXTAREA" ||
+          document.activeElement.closest(".monaco-editor") ||
+          document.activeElement.getAttribute("role") === "textbox" ||
           (document.activeElement as HTMLElement).isContentEditable)
       ) {
         return;
