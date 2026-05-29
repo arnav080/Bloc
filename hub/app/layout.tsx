@@ -6,6 +6,7 @@ import { RootProvider } from "fumadocs-ui/provider/next";
 import ThemeShortcut from "@/components/ThemeShortcut";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "sonner";
+import { Analytics } from "@vercel/analytics/next";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -74,6 +75,7 @@ export default function RootLayout({
               {children}
             </main>
             <Toaster position="bottom-right" theme="system" />
+            <Analytics />
           </AuthProvider>
         </RootProvider>
       </body>

@@ -12,6 +12,7 @@
     "@monaco-editor/react": "^4.7.0",
     "@supabase/supabase-js": "^2.106.2",
     "@types/mdx": "^2.0.13",
+    "@vercel/analytics": "^2.0.1",
     "clsx": "^2.1.1",
     "fumadocs-core": "^16.9.1",
     "fumadocs-mdx": "^15.0.9",
