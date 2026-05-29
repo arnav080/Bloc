@@ -74,6 +74,7 @@ brews:
     repository:
       owner: arnav080
       name: homebrew-bloc
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     commit_author:
       name: Bloc Team
       email: arnav00782@gmail.com
