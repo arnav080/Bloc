@@ -174,7 +174,7 @@ export default function UserProfilePage() {
       try {
         const { data, error } = await supabase
           .from("recipes")
-          .select("id, name, creator, description, base_model, min_vram, target_platform, yaml_content, compat_builds, created_at")
+          .select("id, name, creator, description, base_model, min_vram, target_platform, yaml_content, compat_builds, created_at, telemetry_events(count)")
           .eq("creator", usernameKey)
           .order("created_at", { ascending: false })
           .limit(100);
@@ -200,7 +200,7 @@ export default function UserProfilePage() {
               },
               verified: "none" as const,
               telemetry: {
-                runs: row.compat_builds?.length || 0,
+                runs: row.telemetry_events?.[0]?.count || 0,
                 benchmarks: []
               }
             };
