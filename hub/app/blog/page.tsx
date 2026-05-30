@@ -83,9 +83,6 @@ export default function BlogIndex() {
                 {/* Content */}
                 <div>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 border border-zinc-300 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400">
-                      {post.data.tag || "Systems"}
-                    </span>
                     <span className="font-mono text-[9px] text-zinc-400 dark:text-zinc-600">
                       {formattedDate}
                     </span>

@@ -30,9 +30,6 @@ export default async function BlogPostPage(props: {
       {/* Post Header */}
       <header className="mb-12 border-b border-zinc-200 dark:border-zinc-800/80 pb-8">
         <div className="flex items-center gap-2 mb-4">
-          <span className="font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 border border-zinc-300 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400">
-            {page.data.tag || "Systems"}
-          </span>
           <span className="font-mono text-[9px] text-zinc-400 dark:text-zinc-600">
             {formattedDate}
           </span>
@@ -54,7 +51,7 @@ export default async function BlogPostPage(props: {
       </header>
 
       {/* Post Body (MDX Content) */}
-      <div className="prose prose-zinc dark:prose-invert max-w-none font-sans text-sm md:text-base leading-relaxed text-zinc-800 dark:text-zinc-200 prose-headings:font-switzer prose-headings:font-semibold prose-headings:text-black dark:prose-headings:text-white prose-a:text-blue-600 prose-code:font-mono prose-code:text-xs">
+      <div className="prose prose-zinc dark:prose-invert max-w-none font-mono text-sm md:text-base leading-relaxed text-zinc-800 dark:text-zinc-200 prose-headings:font-switzer prose-headings:font-semibold prose-headings:text-black dark:prose-headings:text-white prose-a:text-blue-600 prose-code:font-mono prose-code:text-xs">
         <MDX />
       </div>
     </article>

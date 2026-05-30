@@ -7,7 +7,7 @@ import * as __fd_glob_4 from "../content/docs/installation.mdx?collection=docs"
 import * as __fd_glob_3 from "../content/docs/index.mdx?collection=docs"
 import * as __fd_glob_2 from "../content/docs/how-bloc-works.mdx?collection=docs"
 import * as __fd_glob_1 from "../content/docs/commands.mdx?collection=docs"
-import * as __fd_glob_0 from "../content/blog/announcing-bloc.mdx?collection=blog"
+import * as __fd_glob_0 from "../content/blog/rethinking-local-ai-engine.mdx?collection=blog"
 import { server } from 'fumadocs-mdx/runtime/server';
 import type * as Config from '../source.config';
 
@@ -16,7 +16,7 @@ const create = server<typeof Config, import("fumadocs-mdx/runtime/types").Intern
   }
 }>({"doc":{"passthroughs":["extractedReferences"]}});
 
-export const blog = await create.doc("blog", "content/blog", {"announcing-bloc.mdx": __fd_glob_0, });
+export const blog = await create.doc("blog", "content/blog", {"rethinking-local-ai-engine.mdx": __fd_glob_0, });
 
 export const docs = await create.doc("docs", "content/docs", {"commands.mdx": __fd_glob_1, "how-bloc-works.mdx": __fd_glob_2, "index.mdx": __fd_glob_3, "installation.mdx": __fd_glob_4, "quickstart.mdx": __fd_glob_5, "recipes.mdx": __fd_glob_6, "troubleshooting.mdx": __fd_glob_7, });
 

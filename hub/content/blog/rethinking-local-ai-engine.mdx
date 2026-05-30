@@ -1,0 +1,57 @@
+---
+title: The Missing Layer in Local AI - Why We Built Bloc
+description: Local model runners are too monolithic and hide compilation and execution details. Bloc offers an engine-agnostic recipe layer for llama.cpp and vLLM.
+date: 2026-05-31
+authors: ["Arnav Gautam"]
+tag: Systems
+---
+
+The landscape of local large language models is growing at an incredible pace. Almost daily, researchers publish new, highly capable open-source models that rival proprietary APIs. However, as the ecosystem expands, a major gap has emerged between having access to raw model weights and actually running them efficiently. 
+
+Local AI users and researchers currently lack a standard, reliable way to share the precise configurations needed to make these models run practically. 
+
+Many developers and teams find themselves running models like Qwen3 using default recommended setups that are highly sub-optimal. They often rely on monolithic, high-level wrappers like Ollama when they actually need the raw performance, low latency, and granular control of engines like llama.cpp and vLLM. 
+
+Because there is no unified way to package and distribute optimized configurations, every developer is forced to reinvent the wheel. 
+
+### The Configuration Mess
+
+Right now, sharing an optimized local AI setup is a fragmented, manual process. If a model optimizer or researcher discovers a way to run a 30B parameter model efficiently on a consumer GPU, they have to share that knowledge through text blocks in blog posts, raw scripts on GitHub, or undocumented README files. 
+
+For anyone trying to replicate that setup, the experience is fragile and time-consuming. You have to:
+
+1. Manually match your local system hardware to the compiler flags used by the researcher.
+2. Figure out the correct context sizes, thread counts, and GPU offloading ratios.
+3. Keep track of dependency versions, Python virtual environments, and custom engine builds.
+
+For enterprises, this configuration mess is even more costly. Companies trying to host local AI models securely in their own offices or private data centers spend massive engineering hours building custom machine learning operations pipelines. They write bespoke wrappers and configuration scripts just to get stable, low-latency API endpoints for their internal applications. 
+
+Local AI needs the equivalent of Hugging Face, but instead of hosting just the raw model weights, it needs to host the execution environments and configurations that make those weights run perfectly. 
+
+That is why we built Bloc.
+
+### Bloc: The Hub for Local AI Recipes
+
+Bloc is designed to be the central registry for local AI runtimes. It is built to allow AI researchers, model optimizers, and systems engineers to package their highly tuned configurations into reproducible "recipes" that anyone can run in seconds.
+
+Instead of writing instructions in a README file, a researcher can publish a verified YAML recipe to the Bloc registry. This recipe contains everything needed to run the model optimally:
+
+* Pinned engine versions (such as specific builds of llama.cpp or vLLM).
+* Hardware-aware optimization parameters (such as flash attention flags, batch sizes, and memory limits).
+* The verified download locations for the model weights.
+
+When an enterprise or developer wants to use that specific model configuration, they do not need to spend hours configuring their server. They simply run a single command to pull the recipe:
+
+```bash
+bloc deploy creator-name/model-recipe
+```
+
+### Bridging the Gap from Optimization to API
+
+By serving as a registry for local AI configurations, Bloc completely changes how models are deployed and consumed:
+
+* **Instant API Generation:** The moment a recipe is deployed, Bloc launches the underlying runtime and exposes a standardized OpenAI-compatible API endpoint. Anyone on the network can immediately start querying the model without needing to understand the underlying hardware flags.
+* **Democratized Systems Engineering:** Expert systems engineers can spend their time fine-tuning a model for peak performance, unified memory usage, or multi-GPU environments. Once they upload the recipe, less technical developers can leverage those exact configurations instantly.
+* **Unified Registry for Runtimes:** Just as Hugging Face became the standard for sharing model architectures and weights, Bloc serves as the standard for sharing the execution layer. It bridges the gap between raw research and production-grade local deployments.
+
+The future of local AI depends on reproducibility and shared knowledge. By making optimized configurations portable, Bloc ensures that the best research and optimization techniques can be deployed by anyone, anywhere, in seconds.

@@ -79,7 +79,7 @@ html {
     background-size: 120px 120px, 120px 120px, 12px 12px, 12px 12px;
   }
 
-  h1, h2, h3, h4, h5, h6, p, span, a, button, input, textarea {
+  h1, h2, h3, h4, h5, h6, p, span, a, button, input, textarea, li {
     font-family: var(--font-mono);
   }
   html {
@@ -89,6 +89,10 @@ html {
 
 .font-switzer, h1.font-switzer, p.font-switzer, span.font-switzer {
   font-family: var(--font-switzer), sans-serif !important;
+}
+
+.prose li, li {
+  font-family: var(--font-mono) !important;
 }
 
 .font-silkscreen, span.font-silkscreen {
