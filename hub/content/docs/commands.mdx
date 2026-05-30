@@ -55,7 +55,7 @@ bloc search deepseek --vram 8GB --platform cuda
 ## Deployment Commands
 
 ### `bloc deploy [author/recipe]`
-Fetches a recipe manifest from the registry, downloads the required GGUF weights, validates your local llama.cpp environment, runs pre-run setup scripts, and starts the API server.
+Fetches a recipe manifest from the registry, downloads the required weights (either GGUF or Hugging Face repository files), validates your local execution capabilities, runs pre-run setup scripts, and starts the API server.
 
 ```bash
 bloc deploy arnav/qwen3-30b-moe-8gb-cpu-offload
@@ -63,12 +63,32 @@ bloc deploy arnav/qwen3-30b-moe-8gb-cpu-offload
 
 - **Arguments**: Required recipe path in the format `{username}/{recipe-name}`.
 - **Flags**:
-  - `--dry-run`: Build and print the complete execution command (including all computed `llama-server` flags) without actually launching the process.
+  - `--dry-run`: Build and print the complete execution command (including all computed engine flags) without actually launching the process.
   - `--no-telemetry`: Disable session performance and metrics reporting for this run.
+  - `--runtime <value>`: Override the recipe's declared execution runtime environment. Supported runtimes: `native` (local OS process) or `docker` (containerized).
 
 ---
 
 ## Cache & System Management
+
+### `bloc cache`
+Manage the local cache directory (`~/.cache/bloc`).
+
+* **`bloc cache status`**: Show local cache directory locations and size breakdown across GGUF models, Hugging Face repos, Python runtimes, and temp download files.
+* **`bloc cache prune`**: Wipe the entire cache directory. Clears all cached weights, Python environments, and temp files (requires user confirmation).
+
+### `bloc images`
+Manage Docker container images pulled by containerized recipes.
+
+* **`bloc images list`**: List local container images with `vllm` in their repository name, along with their image IDs, tags, sizes, and creation dates.
+* **`bloc images prune`**: Interactively select and remove cached Docker images to reclaim disk space.
+
+### `bloc runtime`
+Manage versioned local engines and execution runtime environments.
+
+* **`bloc runtime status`**: Scan your system PATH for `llama-server` and `docker`, verify Docker daemon access, check for installed Python virtual environments, and test if the NVIDIA Container Toolkit GPU passthrough is functional.
+* **`bloc runtime list`**: List all locally installed python virtual environments created by `native` vLLM deployments with Python version, installation date, and size.
+* **`bloc runtime prune`**: Interactively select and delete cached versioned python environments.
 
 ### `bloc models`
 List all locally cached model weight files (GGUFs) downloaded by the CLI. Displays filenames, sizes in gigabytes, download dates, and total cache folder size.
@@ -78,13 +98,17 @@ bloc models
 ```
 
 ### `bloc models clear`
-Delete all cached model weights to reclaim disk space.
+Delete cached single-file GGUF model weights to reclaim disk space.
 
 ```bash
 bloc models clear
 ```
 
 - Prompts for confirmation before deleting files.
+
+---
+
+## Utility Commands
 
 ### `bloc telemetry [on|off|show]`
 Configure or check anonymous telemetry reporting.

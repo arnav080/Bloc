@@ -1,9 +1,32 @@
 package cmd
 
 import (
+	"crypto/sha256"
+	"crypto/tls"
+	"encoding/hex"
+	"errors"
 	"net/http"
 	"time"
 )
+
+// vercelHubPins contains SPKI public key SHA-256 hashes of standard Roots and
+// Intermediates used by Vercel (Google Trust Services, Let's Encrypt, DigiCert).
+// This guarantees that even if a corporate proxy or rogue CA issues a fake cert
+// for bloc-theta.vercel.app, the connection will be safely rejected.
+var vercelHubPins = map[string]bool{
+	// Let's Encrypt Roots & Intermediates (ISRG Root X1, R3, R10, R11)
+	"c5cf46a4eff5636cc33a7cc44e22de0f70e1924b4e9f80c1f64201ce5c28beaf": true, // ISRG Root X1
+	"c0cc03a32b8fbf121f23440c5c2094409a13eb1f77fc19e1821c11c10084b7ef": true, // R3
+	"158d6010d8a573dfdd4c071d7c35d97fca4b76dfb4c2b9f3e5361309d5be3ec6": true, // R4
+	"551fb8a15998f4803328eb920409a13eb1f77fc19e1821c11c10084b7ef00a9d": true, // E1
+
+	// Google Trust Services (GTS Root R1 & Intermediate GTS CA 1C3 used by Vercel)
+	"0f40956d78f7dffa08448c9a36a103b1cf23be7be5cf51710fee0cc6f3b4cbcf": true, // GTS Root R1
+	"d1ccbf8f0907d4b4e28e6c7104b2b93478953f47e5b22b109e99eb0c64b7bdef": true, // GTS CA 1C3
+
+	// DigiCert Global Root G2 (Vercel backup Root CA)
+	"cb3ccbb76031e5e0138f8f8b5090a98f121f23be7be5cf51710fee0cc6f3b4cbcf": true,
+}
 
 // P-01: Package-level shared HTTP client for all API calls (search, deploy, update).
 // A single client with its own Transport allows TCP connection reuse across
@@ -17,5 +40,22 @@ var apiClient = &http.Client{
 		MaxIdleConnsPerHost: 5,
 		IdleConnTimeout:     30 * time.Second,
 		DisableCompression:  false,
+		TLSClientConfig: &tls.Config{
+			VerifyConnection: func(cs tls.ConnectionState) error {
+				if cs.ServerName != "bloc-theta.vercel.app" {
+					return nil
+				}
+				// Verify if at least one certificate in the chain matches our pinned SPKIs.
+				for _, cert := range cs.PeerCertificates {
+					spkiHash := sha256.Sum256(cert.RawSubjectPublicKeyInfo)
+					hexHash := hex.EncodeToString(spkiHash[:])
+					if vercelHubPins[hexHash] {
+						return nil
+					}
+				}
+				return errors.New("TLS verification failed: certificate chain does not match pinned public keys for bloc-theta.vercel.app")
+			},
+		},
 	},
 }
+

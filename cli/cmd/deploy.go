@@ -12,13 +12,13 @@ import (
 	"os/exec"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/bloc-org/bloc/internal/config"
 	"github.com/bloc-org/bloc/internal/downloader"
 	"github.com/bloc-org/bloc/internal/hardware"
-	"github.com/bloc-org/bloc/internal/probe"
 	"github.com/bloc-org/bloc/internal/recipe"
-	"github.com/bloc-org/bloc/internal/runner"
+	"github.com/bloc-org/bloc/internal/runtime"
 	"github.com/bloc-org/bloc/internal/telemetry"
 	"github.com/spf13/cobra"
 )
@@ -62,25 +62,34 @@ func validateAPIURL(rawURL string) error {
 // F-09: Prevents path traversal via crafted recipe IDs like "../../etc/passwd/foo".
 var recipeIDRe = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.\-]{0,99}$`)
 
+// preRunCmdRe is an allowlist for pre-run commands.
+// SEC-02: We cannot parse shell syntax in Go, so we reject any command containing
+// shell metacharacters that could cause injection (;|&`$(){}><\r\n\\).
+// Authors who need complex commands should put them in a script file and call that.
+var preRunCmdBannedRe = regexp.MustCompile(`[;|&` + "`" + `$(){}><\r\n\\]`)
+
 var deployDryRun bool
 var deployNoTelemetry bool
+var deployRuntime string // --runtime flag: overrides recipe's engine.runtime
 
 var deployCmd = &cobra.Command{
 	Use:   "deploy [author/recipe]",
 	Short: "Fetch and run a recipe from the Bloc registry",
-	Long: `Fetch a recipe from bloc-theta.vercel.app, probe your hardware and llama-server
+	Long: `Fetch a recipe from bloc-theta.vercel.app, probe your hardware and runtime
 capabilities, download the model weights if needed, and launch the server.
 
 Examples:
   bloc deploy arnav080/qwen3-30b-moe-8gb-cpu-offload
-  bloc deploy arnav080/qwen3-30b-moe-8gb-cpu-offload --dry-run`,
+  bloc deploy arnav080/qwen3-30b-moe-8gb-cpu-offload --dry-run
+  bloc deploy arnav080/step-3.7-flash --runtime docker`,
 	Args: cobra.ExactArgs(1),
 	RunE: runDeploy,
 }
 
 func init() {
-	deployCmd.Flags().BoolVar(&deployDryRun, "dry-run", false, "Show the llama-server command without running it")
+	deployCmd.Flags().BoolVar(&deployDryRun, "dry-run", false, "Show the server command without running it")
 	deployCmd.Flags().BoolVar(&deployNoTelemetry, "no-telemetry", false, "Disable telemetry for this run")
+	deployCmd.Flags().StringVar(&deployRuntime, "runtime", "", "Override recipe's declared runtime (native|docker)")
 }
 
 func runDeploy(cmd *cobra.Command, args []string) error {
@@ -99,6 +108,15 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("invalid recipe name %q — only alphanumeric, dash, dot and underscore allowed", name)
 	}
 
+	// Fix #8: stepN is now a local variable scoped to this invocation.
+	// The old package-level var broke if runDeploy was called twice in a process.
+	var stepN int
+	printStep := func(label string) {
+		stepN++
+		fmt.Printf("\n\033[1m[%d] %s\033[0m\n", stepN, label)
+	}
+
+	// ── Step 1: Fetch recipe ───────────────────────────────────────────────────
 	printStep("Fetching recipe")
 	r, err := fetchRecipe(author, name)
 	if err != nil {
@@ -106,7 +124,15 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 	}
 	fmt.Printf("  \033[32m✓\033[0m  %s — %s\n", r.Metadata.Name, shortDesc(r.Metadata.Description, 72))
 
-	// ── Step 2: Hardware Probe ─────────────────────────────────────────────────
+	// ── Step 2: Resolve runtime ────────────────────────────────────────────────
+	printStep("Resolving runtime")
+	rt, err := runtime.Resolve(r, deployRuntime)
+	if err != nil {
+		return fmt.Errorf("cannot resolve runtime: %w", err)
+	}
+	fmt.Printf("  \033[32m✓\033[0m  Engine: %s\n", rt.Name())
+
+	// ── Step 3: Hardware Probe ─────────────────────────────────────────────────
 	printStep("Probing hardware")
 	hw, err := hardware.Probe()
 	if err != nil {
@@ -123,36 +149,41 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		}
 	}
 
-	// ── Step 3: Capability Check ───────────────────────────────────────────────
-	printStep("Checking llama-server capabilities")
+	// ── Step 4: Runtime Capability Check ──────────────────────────────────────
+	printStep(fmt.Sprintf("Checking %s capabilities", rt.Name()))
 	requiredFlags := r.RequiredFlags()
-	probeResult, err := probe.CheckRecipeCompatibility(requiredFlags)
+	probeResult, err := rt.Probe(requiredFlags)
 	if err != nil {
-		// llama-server not found — offer to install it
-		fmt.Fprintf(os.Stderr, "\n\033[31m✗  llama-server not found\033[0m\n")
-		if probe.OfferInstall() {
+		// Runtime not found — offer to install it
+		fmt.Fprintf(os.Stderr, "\n\033[31m✗  %s not found\033[0m\n", rt.Name())
+		if rt.OfferInstall() {
 			// Re-probe after a successful install
-			probeResult, err = probe.CheckRecipeCompatibility(requiredFlags)
+			probeResult, err = rt.Probe(requiredFlags)
 			if err != nil {
-				return fmt.Errorf("llama-server still unavailable after install: %w", err)
+				return fmt.Errorf("%s still unavailable after install: %w", rt.Name(), err)
 			}
 		} else {
-			return fmt.Errorf("llama-server is required but not installed")
+			return fmt.Errorf("%s is required but not installed", rt.Name())
 		}
 	}
 	if len(probeResult.Missing) > 0 {
-		fmt.Fprintf(os.Stderr, "\n\033[31m✗  Incompatible llama-server binary:\033[0m\n")
+		fmt.Fprintf(os.Stderr, "\n\033[31m✗  Incompatible %s binary:\033[0m\n", rt.Name())
 		fmt.Fprintf(os.Stderr, "   Missing flags required by this recipe:\n")
 		for _, f := range probeResult.Missing {
 			fmt.Fprintf(os.Stderr, "     %s\n", f)
 		}
-		fmt.Fprintf(os.Stderr, "\n   Update llama.cpp to a newer build.\n")
+		fmt.Fprintf(os.Stderr, "\n   Update %s to a newer build.\n", rt.Name())
 		fmt.Fprintf(os.Stderr, "   Install guide: https://bloc-theta.vercel.app/install\n\n")
-		return fmt.Errorf("llama-server is missing required capabilities")
+		return fmt.Errorf("%s is missing required capabilities", rt.Name())
 	}
 	fmt.Printf("  \033[32m✓\033[0m  %s — all required flags supported\n", probeResult.BinaryPath)
 
-	// ── Step 4: Download Model ─────────────────────────────────────────────────
+	// ── Context for all long-running operations (downloads + server) ────────────
+	// SEC: Created here (before Step 5) so Ctrl+C during download is honoured.
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// ── Step 5: Download Model ─────────────────────────────────────────────────
 	cacheDir, err := config.CacheDir()
 	if err != nil {
 		return err
@@ -162,43 +193,104 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	printStep("Checking model cache")
-	cached, _ := dm.IsAlreadyCached(r.Model.File, r.Model.SHA256)
-	var modelPath string
-	if cached {
-		modelPath = dm.ModelPath(r.Model.File)
-		fmt.Printf("  \033[32m✓\033[0m  Already cached: %s\n", modelPath)
-	} else {
-		fmt.Printf("  Downloading %s (%.1f GB)...\n", r.Model.File, r.Model.SizeGB)
-		modelPath, err = dm.EnsureDownloaded(
-			context.Background(),
-			r.Model.File,
-			r.Model.DownloadURL,
-			r.Model.SHA256,
-			r.Model.SizeGB,
-			func(downloaded, total int64, speedMBs float64) {
-				pct := float64(downloaded) / float64(total) * 100
-				bar := progressBar(int(pct), 30)
-				fmt.Printf("\r  %s %.1f/%.1f GB  [%s] %.0f%% @ %.1f MB/s",
-					r.Model.File,
-					float64(downloaded)/1e9,
-					float64(total)/1e9,
-					bar,
-					pct,
-					speedMBs,
-				)
-			},
-		)
-		fmt.Println() // newline after progress bar
-		if err != nil {
-			return fmt.Errorf("download failed: %w", err)
-		}
-		fmt.Printf("  \033[32m✓\033[0m  Saved to %s\n", modelPath)
+	// Fix #6: Load HF token and inject into the downloader.
+	// BLOC_HF_TOKEN env var takes precedence over stored credentials.
+	// F-21: Token is never logged or included in error messages.
+	if hfCreds, hfErr := config.LoadHFAuth(); hfErr == nil && hfCreds != nil {
+		dm.SetHFToken(hfCreds.Token)
 	}
 
-	// ── Step 5: Pre-run commands ───────────────────────────────────────────────
+	printStep("Checking model cache")
+	var modelPath string
+
+	if r.Model.HFRepo != "" {
+		// ── HuggingFace repo download (vLLM safetensors + config + tokenizer) ───
+		bw := bufio.NewWriterSize(os.Stdout, 1024)
+		if dm.IsRepoCached(r.Model.HFRepo, "") {
+			modelPath = dm.RepoPath(r.Model.HFRepo, "main")
+			fmt.Printf("  \033[32m✓\033[0m  Already cached: %s\n", modelPath)
+		} else {
+			if err := checkDiskSpace(cacheDir, r.Model.SizeGB); err != nil {
+				return err
+			}
+			fmt.Printf("  Downloading HF repo %s (%.1f GB)...\n", r.Model.HFRepo, r.Model.SizeGB)
+			modelPath, err = dm.EnsureRepoDownloaded(
+				ctx,
+				r.Model.HFRepo,
+				"", // default revision "main"
+				func(downloaded, total int64, speedMBs float64) {
+					pct := float64(0)
+					if total > 0 {
+						pct = float64(downloaded) / float64(total) * 100
+					}
+					bar := progressBar(int(pct), 30)
+					_, _ = fmt.Fprintf(bw, "\r  %s %.1f/%.1f GB  [%s] %.0f%% @ %.1f MB/s",
+						r.Model.HFRepo,
+						float64(downloaded)/1e9,
+						float64(total)/1e9,
+						bar,
+						pct,
+						speedMBs,
+					)
+					_ = bw.Flush()
+				},
+			)
+			fmt.Println() // newline after progress bar
+			if err != nil {
+				return fmt.Errorf("repo download failed: %w", err)
+			}
+			fmt.Printf("  \033[32m✓\033[0m  Saved to %s\n", modelPath)
+		}
+	} else {
+		// ── Single-file GGUF download (llama.cpp) ─────────────────────────────
+		cached, _ := dm.IsAlreadyCached(r.Model.File, r.Model.SHA256)
+		bw := bufio.NewWriterSize(os.Stdout, 1024)
+		if cached {
+			modelPath = dm.ModelPath(r.Model.File)
+			fmt.Printf("  \033[32m✓\033[0m  Already cached: %s\n", modelPath)
+		} else {
+			if err := checkDiskSpace(cacheDir, r.Model.SizeGB); err != nil {
+				return err
+			}
+			fmt.Printf("  Downloading %s (%.1f GB)...\n", r.Model.File, r.Model.SizeGB)
+			modelPath, err = dm.EnsureDownloaded(
+				ctx,
+				r.Model.File,
+				r.Model.DownloadURL,
+				r.Model.SHA256,
+				r.Model.SizeGB,
+				func(downloaded, total int64, speedMBs float64) {
+					pct := float64(downloaded) / float64(total) * 100
+					bar := progressBar(int(pct), 30)
+					_, _ = fmt.Fprintf(bw, "\r  %s %.1f/%.1f GB  [%s] %.0f%% @ %.1f MB/s",
+						r.Model.File,
+						float64(downloaded)/1e9,
+						float64(total)/1e9,
+						bar,
+						pct,
+						speedMBs,
+					)
+				},
+			)
+			fmt.Println() // newline after progress bar
+			if err != nil {
+				return fmt.Errorf("download failed: %w", err)
+			}
+			fmt.Printf("  \033[32m✓\033[0m  Saved to %s\n", modelPath)
+		}
+	}
+
+	// ── Step 6: Pre-run commands ───────────────────────────────────────────────
 	if len(r.PreRun.Commands) > 0 {
 		printStep("Pre-run setup")
+		// SEC-02: Validate each command against an allowlist before showing or executing.
+		// We reject commands containing shell metacharacters to prevent injection.
+		// Authors who need more complex commands should put them in a script.
+		for _, c := range r.PreRun.Commands {
+			if preRunCmdBannedRe.MatchString(c) {
+				return fmt.Errorf("pre-run command %q contains shell metacharacters — use a script instead", c)
+			}
+		}
 		fmt.Println("  This recipe will execute the following commands before starting:")
 		for _, c := range r.PreRun.Commands {
 			fmt.Printf("    \033[33m%s\033[0m\n", c)
@@ -207,18 +299,61 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("pre-run commands rejected by user")
 		}
 		for _, c := range r.PreRun.Commands {
-			// F-01: runShellCommand now actually executes the command.
 			if err := runShellCommand(c, r.PreRun.Env); err != nil {
 				return fmt.Errorf("pre-run command failed: %w", err)
 			}
 		}
 	}
 
-	// ── Step 6+7: Build command and run (or dry-run) ───────────────────────────
-	flags := r.BuildFlags()
+	// ── Step 7: trust_remote_code gate (F-19) ─────────────────────────────────
+	// If the recipe requests custom model code execution, require an explicit
+	// user confirmation. This flag is NOT passable through extra_args (which would
+	// be silently accepted); it must appear as a first-class field so this gate
+	// always fires. The confirm prompt makes clear what the user is accepting.
+	engineName := r.Engine.Name
+	if engineName == "" {
+		engineName = "llama.cpp"
+	}
+	if r.EngineConfig.TrustRemoteCode && engineName == "vllm" {
+		printStep("Security confirmation required")
+		fmt.Println()
+		fmt.Println("  \033[33m⚠  This recipe sets trust_remote_code: true\033[0m")
+		fmt.Println()
+		fmt.Println("  This allows vLLM to execute custom Python code bundled with the model.")
+		fmt.Println("  Only proceed if you trust the model author and have reviewed the code at:")
+		fmt.Printf("  \033[36mhttps://huggingface.co/%s/tree/main\033[0m\n", r.Model.HFRepo)
+		fmt.Println()
+		// SEC-09: Use confirmYesExplicit — EOF (e.g. non-interactive pipe) must default to No
+		// for security-critical prompts, not Yes like the regular confirm() helper does.
+		if !confirmYesExplicit("  Allow execution of custom model code? [y/N]: ") {
+			return fmt.Errorf("trust_remote_code rejected by user — aborting")
+		}
+	}
+
+	// ── Step 8: Build flags (engine-aware) + dry-run ───────────────────────────
+	// Route to the correct flag builder based on engine. vLLM and llama.cpp have
+	// entirely different CLI flag namespaces — they must never be mixed.
+	var flags []string
+	switch engineName {
+	case "vllm":
+		flags = r.BuildVLLMFlags()
+		// F-19: inject --trust-remote-code ONLY after user confirmed above
+		if r.EngineConfig.TrustRemoteCode {
+			flags = append(flags, "--trust-remote-code")
+		}
+	default:
+		flags = r.BuildFlags()
+	}
+
 	if deployDryRun {
-		fmt.Println("\n\033[36m── Dry run: llama-server command ─────────────────────────────────\033[0m")
-		fmt.Printf("llama-server -m %s \\\n", modelPath)
+		fmt.Printf("\n\033[36m── Dry run: %s command ──────────────────────────────────────────\033[0m\n", rt.Name())
+		switch engineName {
+		case "vllm":
+			fmt.Printf("python3 -m vllm.entrypoints.openai.api_server \\\n")
+			fmt.Printf("  --model %s \\\n", modelPath)
+		default:
+			fmt.Printf("%s -m %s \\\n", rt.Name(), modelPath)
+		}
 		for i, f := range flags {
 			if i < len(flags)-1 {
 				fmt.Printf("  %s \\\n", f)
@@ -229,21 +364,31 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 		return nil
 	}
 
+
 	// Telemetry consent (first run only)
 	if !deployNoTelemetry {
 		telemetry.MaybePromptConsent()
 	}
 
-	printStep("Launching llama-server")
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	printStep(fmt.Sprintf("Launching %s", rt.Name()))
 
-	stats, err := runner.Run(ctx, modelPath, flags, r.PreRun.Env)
+	runCfg := runtime.RunConfig{
+		ModelPath: modelPath,
+		Flags:     flags,
+		EnvVars:   r.PreRun.Env,
+		Port:      r.EngineConfig.Port, // Fix #5: dynamic port in startup message
+		Recipe:    r,                   // Phase 4: Docker runtime needs metadata for container slug
+	}
+	if modelPath != "" {
+		now := time.Now()
+		_ = os.Chtimes(modelPath, now, now)
+	}
+	stats, err := rt.Run(ctx, runCfg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "\033[31m✗  llama-server exited with error: %v\033[0m\n", err)
+		fmt.Fprintf(os.Stderr, "\033[31m✗  %s exited with error: %v\033[0m\n", rt.Name(), err)
 	}
 
-	// ── Step 8: Shutdown + telemetry ──────────────────────────────────────────
+	// ── Step 9: Shutdown + telemetry ──────────────────────────────────────────
 	if !deployNoTelemetry && stats != nil {
 		t, _ := config.LoadTelemetry()
 		if t != nil && t.Enabled {
@@ -277,6 +422,7 @@ func runDeploy(cmd *cobra.Command, args []string) error {
 // fetchRecipe downloads and parses the recipe YAML from the Hub API.
 // F-09: Path segments are URL-encoded and validated before use.
 // F-14: Response body is limited to 1 MB to prevent memory DoS.
+// Fix #7: Bloc Hub auth token is injected if a session exists.
 func fetchRecipe(author, name string) (*recipe.Recipe, error) {
 	// F-09: url.PathEscape ensures special characters don't create path traversal
 	apiURL := fmt.Sprintf("%s/recipes/%s/%s",
@@ -291,6 +437,12 @@ func fetchRecipe(author, name string) (*recipe.Recipe, error) {
 	}
 	req.Header.Set("Accept", "application/yaml, application/json")
 	req.Header.Set("User-Agent", "bloc-cli/"+Version)
+
+	// Fix #7: Inject Bloc Hub token if the user is logged in.
+	// Non-fatal if credentials are missing or unreadable — public recipes work without auth.
+	if auth, authErr := config.LoadAuth(); authErr == nil && auth != nil && auth.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+auth.Token)
+	}
 
 	// P-01: Use shared package-level apiClient (not a new client per call)
 	resp, err := apiClient.Do(req)
@@ -325,15 +477,12 @@ func fetchRecipe(author, name string) (*recipe.Recipe, error) {
 	return recipe.Parse(body)
 }
 
-// printStep prints a numbered step header.
-var stepN int
-
-func printStep(label string) {
-	stepN++
-	fmt.Printf("\n\033[1m[%d] %s\033[0m\n", stepN, label)
-}
+// _unusedPrintStep was a dead function left after refactoring printStep into a
+// local closure. Removed to reduce attack surface (SEC-17: dead code).
 
 // confirm reads a y/n answer from stdin.
+// Default (empty input or EOF on a non-interactive pipe) is YES.
+// Use this for low-risk prompts like "continue with low disk space?".
 func confirm(prompt string) bool {
 	fmt.Print(prompt)
 	scanner := bufio.NewScanner(os.Stdin)
@@ -341,6 +490,22 @@ func confirm(prompt string) bool {
 		ans := strings.ToLower(strings.TrimSpace(scanner.Text()))
 		return ans == "y" || ans == "yes" || ans == ""
 	}
+	// EOF — default Yes for non-security prompts
+	return true
+}
+
+// confirmYesExplicit reads a y/n answer from stdin.
+// Default (empty input or EOF) is NO.
+// SEC-09: Use for security-critical prompts (e.g., trust_remote_code) so that
+// non-interactive piped execution cannot silently accept dangerous permissions.
+func confirmYesExplicit(prompt string) bool {
+	fmt.Print(prompt)
+	scanner := bufio.NewScanner(os.Stdin)
+	if scanner.Scan() {
+		ans := strings.ToLower(strings.TrimSpace(scanner.Text()))
+		return ans == "y" || ans == "yes"
+	}
+	// EOF — default No for security-critical prompts
 	return false
 }
 
@@ -386,4 +551,26 @@ func runShellCommand(command string, env map[string]string) error {
 		cmd.Env = append(cmd.Env, k+"="+v)
 	}
 	return cmd.Run()
+}
+
+func checkDiskSpace(cacheDir string, sizeGB float64) error {
+	freeBytes, err := hardware.FreeSpaceBytes(cacheDir)
+	if err != nil {
+		// Non-fatal if we can't query disk space, just continue
+		return nil
+	}
+
+	freeGB := float64(freeBytes) / 1e9
+	requiredGB := sizeGB * 1.1
+
+	if freeGB < requiredGB {
+		fmt.Println()
+		fmt.Printf("  \033[33m⚠  Warning:\033[0m This model is ~%.1f GB. You have %.1f GB free.\n", sizeGB, freeGB)
+		fmt.Println("     Run 'bloc models prune' to free space.")
+		if !confirm("     Continue anyway? [y/N]: ") {
+			return fmt.Errorf("cancelled due to low disk space")
+		}
+		fmt.Println()
+	}
+	return nil
 }

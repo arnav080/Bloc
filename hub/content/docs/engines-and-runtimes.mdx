@@ -1,0 +1,116 @@
+---
+title: Engines & Runtimes
+description: Learn how Bloc runs models natively or inside Docker containers using llama.cpp and vLLM.
+---
+
+Bloc is designed with an engine-agnostic architecture. This allows you to run model deployment configurations (recipes) across different execution backends (**Engines**) and execution environments (**Runtimes**).
+
+---
+
+## 1. Supported Engines
+
+An **Engine** is the core inference library that loads the weights and handles text generation. Bloc supports two first-class engines:
+
+### `llama.cpp`
+* **Best for:** Apple Silicon (macOS), consumer-grade hardware with lower VRAM, and fast single-user setup.
+* **Weights Format:** Single-file quantized GGUF format.
+* **Highlights:** Extremely low resource footprint, fast compilation, and native support for CPU/GPU hybrid offloading (MoE expert offloading).
+
+### `vllm`
+* **Best for:** Dedicated server environments, multi-GPU orchestration, and high-concurrency production API endpoints.
+* **Weights Format:** Full Hugging Face repositories containing Safetensors and configuration files.
+* **Highlights:** PagedAttention cache management, multi-GPU Tensor Parallelism, and high throughput under concurrent requests.
+
+---
+
+## 2. Supported Runtimes
+
+A **Runtime** is the environment where the engine runs. Each engine can run in one of two runtime environments:
+
+| Runtime | Description | Setup Effort | Isolation |
+| :--- | :--- | :--- | :--- |
+| **`native`** | Executes the engine directly as a local OS process/program. | Low (looks for local binaries or python libs) | Low |
+| **`docker`** | Runs the engine inside an isolated Docker container. | Medium (requires Docker + GPU drivers) | High |
+
+> [!TIP]
+> You can override a recipe's default runtime on the CLI at deployment time using the `--runtime` flag:
+> ```bash
+> bloc deploy arnav/qwen3-7b --runtime docker
+> ```
+
+---
+
+## 3. Running Containerized (Docker Setup)
+
+To use the `docker` runtime, you must have Docker running on your host machine. 
+
+### GPU Access for Containers
+If your recipe targets a GPU (e.g. `target_platform: cuda`), standard Docker installations cannot access the host GPU by default. You must configure the host machine:
+
+1. **Install NVIDIA Drivers**: Ensure standard CUDA drivers are working on the host.
+2. **Install NVIDIA Container Toolkit**:
+   * **Ubuntu/Debian:**
+     ```bash
+     sudo apt-get install -y nvidia-container-toolkit
+     sudo systemctl restart docker
+     ```
+   * **CentOS/RHEL:**
+     ```bash
+     sudo dnf install -y nvidia-container-toolkit
+     sudo systemctl restart docker
+     ```
+3. **Verification**: Verify that Docker can access your GPUs by running:
+   ```bash
+   docker run --rm --gpus all nvidia/cuda:12.0.0-base-ubuntu22.04 nvidia-smi
+   ```
+
+When you deploy a recipe with `runtime: docker` on a GPU-enabled platform, the Bloc CLI automatically manages:
+* Pulling the correct image (e.g., `vllm/vllm-openai`).
+* Forwarding the designated ports.
+* Passing the host GPUs and runtime parameters.
+* Mounting the local cache path (`~/.cache/bloc`) so weights are not redownloaded inside the container.
+
+---
+
+## 4. Hugging Face Authentication & Gated Models
+
+Many popular models (such as Meta's Llama 3) require you to accept a license agreement on Hugging Face before you can download the weights. These are called **gated models**.
+
+### Authentication Flow
+To access gated models through Bloc, you must authenticate:
+
+* **Method 1: Interactive Login (Recommended)**
+  Run the login command in your terminal:
+  ```bash
+  bloc login
+  ```
+  This securely links your terminal session to your Bloc Hub profile, which carries your Hugging Face credentials.
+
+* **Method 2: Environment Variable override**
+  If you are running in a CI/CD environment or headless server, you can set the token directly via the environment:
+  ```bash
+  export BLOC_HF_TOKEN="hf_your_token_here"
+  ```
+  > [!IMPORTANT]
+  > For security, the Bloc CLI automatically sanitizes the execution environment and unsets the token in memory immediately after initialization to prevent accidental leakages to subprocesses.
+
+---
+
+## 5. Security & Custom Model Code
+
+Some Hugging Face repositories include custom Python files defining the model architecture. Running these requires executing untrusted code on your machine.
+
+### The `trust_remote_code` Prompt Gate
+If a vLLM recipe defines `trust_remote_code: true` under `engine_config`, the Bloc CLI forces a security prompt gate:
+
+```
+  ⚠  This recipe sets trust_remote_code: true
+
+  This allows vLLM to execute custom Python code bundled with the model.
+  Only proceed if you trust the model author and have reviewed the code.
+
+  Allow execution of custom model code? [y/N]:
+```
+
+* **Interactive terminal:** You must explicitly type `y` or `yes` to authorize execution. Pressing Enter or typing anything else defaults to **No** (aborting deployment).
+* **Non-interactive terminal (Pipes/Scripts):** If standard input is closed or piped, the prompt automatically rejects permission and aborts for safety.

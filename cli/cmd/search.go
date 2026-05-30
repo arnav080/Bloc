@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -57,7 +58,7 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	if searchPlatform != "" {
 		params.Set("platform", searchPlatform)
 	}
-	params.Set("limit", fmt.Sprintf("%d", searchLimit))
+	params.Set("limit", strconv.Itoa(searchLimit))
 
 	fullURL := apiURL + "?" + params.Encode()
 
@@ -74,7 +75,11 @@ func runSearch(cmd *cobra.Command, args []string) error {
 	}
 	defer resp.Body.Close()
 
-	body, _ := io.ReadAll(resp.Body)
+	// SEC-SEARCH: Limit response to 512 KB — prevents memory DoS from a rogue API.
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 512*1024))
+	if err != nil {
+		return fmt.Errorf("failed to read search response: %w", err)
+	}
 
 	var results []recipeCard
 	if err := json.Unmarshal(body, &results); err != nil {

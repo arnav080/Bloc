@@ -2,12 +2,8 @@ package cmd
 
 import (
 	"fmt"
-	"io"
 	"net/http"
-	"os"
-	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
@@ -64,62 +60,5 @@ func runUpdate(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
-// selfReplace atomically replaces the current binary with a newly downloaded one.
-// Used internally once update download + checksum verification is complete.
-func selfReplace(newBinaryPath string) error {
-	execPath, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("cannot determine current executable path: %w", err)
-	}
-
-	// Write to a temp file next to the current binary
-	dir := filepath.Dir(execPath)
-	tmpPath := filepath.Join(dir, ".bloc-update-tmp")
-
-	src, err := os.Open(newBinaryPath)
-	if err != nil {
-		return err
-	}
-	defer src.Close()
-
-	dst, err := os.OpenFile(tmpPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
-	if err != nil {
-		return fmt.Errorf("cannot write update: %w (try sudo or check permissions)", err)
-	}
-
-	if _, err := io.Copy(dst, src); err != nil {
-		dst.Close()
-		os.Remove(tmpPath)
-		return err
-	}
-	dst.Close()
-
-	// Atomic rename
-	if err := os.Rename(tmpPath, execPath); err != nil {
-		os.Remove(tmpPath)
-		return fmt.Errorf("cannot replace binary: %w", err)
-	}
-
-	return nil
-}
-
-// platformSuffix returns the GoReleaser archive suffix for the current platform.
-func platformSuffix() string {
-	goos := runtime.GOOS
-	goarch := runtime.GOARCH
-	if goarch == "amd64" {
-		goarch = "x86_64"
-	} else if goarch == "arm64" {
-		goarch = "arm64"
-	}
-	switch goos {
-	case "darwin":
-		return fmt.Sprintf("Darwin_%s", goarch)
-	case "linux":
-		return fmt.Sprintf("Linux_%s", goarch)
-	case "windows":
-		return fmt.Sprintf("Windows_%s", goarch)
-	default:
-		return strings.ToTitle(goos) + "_" + goarch
-	}
-}
+// selfReplace and platformSuffix were removed (SEC-17: dead code).
+// They will be reinstated when the self-update flow is implemented in a future release.

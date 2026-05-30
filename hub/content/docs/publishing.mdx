@@ -1,0 +1,65 @@
+---
+title: Publishing Recipes
+description: Learn how to publish and share your local AI recipes to the Bloc Hub registry.
+---
+
+Once you've crafted and tested a model deployment recipe locally, you can publish it to the Bloc Hub registry. This makes it instantly deployable by anyone in the community using `bloc deploy <your-username>/<recipe-name>`.
+
+---
+
+## 1. Prerequisites
+
+Before publishing, ensure your recipe is fully tested and compliant with the `bloc/v1` schema.
+1. Run your recipe locally using `bloc deploy ./your-recipe.yaml` to verify the engine boots and accepts traffic.
+2. Ensure you have a registered Bloc Hub account (your GitHub username will become your publisher namespace).
+
+---
+
+## 2. Submission Methods
+
+Bloc supports two methods for publishing a recipe to the registry:
+
+### Option A: The Hub UI (Recommended)
+The easiest way to submit a new recipe is through the Bloc web interface.
+1. Navigate to the **Submit Recipe** page on the Hub (`/registry/submit`).
+2. Paste the contents of your tested YAML recipe into the editor.
+3. The editor will automatically run real-time static analysis on your YAML to catch any schema errors before submission.
+4. Click **Publish**. Your recipe will be instantly indexed and searchable.
+
+### Option B: GitHub Pull Request (For advanced users/CI automation)
+Since the public registry is backed by a Git repository, you can submit recipes directly via a Pull Request.
+1. Fork the `bloc` repository.
+2. Add your YAML file to the `recipes/<your-username>/` directory (e.g., `recipes/arnav080/qwen3-30b.yaml`).
+3. Open a Pull Request against the main branch. Automated CI checks will validate your recipe.
+4. Once merged, the background jobs will automatically push it to the live registry database.
+
+---
+
+## 3. Validation Rules
+
+All published recipes are subjected to strict automated validation to ensure safety and compatibility across the ecosystem. 
+If your recipe is rejected during submission or CI, it is likely due to one of the following rules:
+
+### Cross-Engine Mixing
+A recipe must strictly adhere to its chosen engine's configuration space.
+- If `engine.name` is `vllm`, you **cannot** use `llama.cpp` specific fields like `gpu_layers`, `batch_size`, `ubatch_size`, `cache_type_k`, or `n_cpu_moe`.
+- If `engine.name` is `llama.cpp`, you **cannot** use `vllm` fields like `tensor_parallel_size` or `gpu_memory_utilization`.
+
+### Port Restrictions (Security)
+To protect user machines, Bloc enforces strict rules on the `port` field:
+- The port must be between **1024** and **65535**.
+- Privileged ports (under `1024`) and dynamic binding (port `0`) are **blocked**.
+
+### Security Allowlists (`extra_args`)
+The `extra_args` array acts as an escape hatch for advanced engine flags. However, any flag passed here is checked against a strict engine-specific security allowlist.
+- Dangerous flags (e.g., overriding host addresses, specifying API keys, or arbitrary file mounting) will cause immediate rejection.
+
+### `trust_remote_code`
+If your `vllm` recipe requires `trust_remote_code: true` to execute custom model code, this is permitted, but the CLI will forcibly prompt the user for explicit confirmation before running the model.
+
+---
+
+## 4. Managing Updates
+
+To update a published recipe, simply submit a new version with the exact same `metadata.name`. 
+The registry will automatically overwrite the old definition with the updated one, maintaining your existing download stats and bookmarks.

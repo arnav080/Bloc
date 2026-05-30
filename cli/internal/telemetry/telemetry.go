@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/bloc-org/bloc/internal/config"
-	"github.com/bloc-org/bloc/internal/runner"
+	blocruntime "github.com/bloc-org/bloc/internal/runtime"
 )
 
 // CLIVersion is set by the cmd package at startup to avoid circular imports.
@@ -94,7 +94,7 @@ func MaybePromptConsent() error {
 
 // Send fires a telemetry event with a 3-second timeout (fire-and-forget).
 // Safe to call even if telemetry is disabled — it will silently no-op.
-func Send(recipeID string, stats *runner.Stats) {
+func Send(recipeID string, stats *blocruntime.Stats) {
 	t, err := config.LoadTelemetry()
 	if err != nil || !t.Enabled {
 		return

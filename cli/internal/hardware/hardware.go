@@ -182,16 +182,22 @@ func (s *SystemInfo) CheckVRAMRequirement(minVRAM string) (bool, float64, float6
 
 // Summary returns a human-readable one-liner for display.
 func (s *SystemInfo) Summary() string {
+	var base string
 	if len(s.GPUs) == 0 {
-		return fmt.Sprintf("%s/%s · %d GB RAM · No GPU detected (CPU-only mode)",
+		base = fmt.Sprintf("%s/%s · %d GB RAM · No GPU detected (CPU-only mode)",
 			s.OS, s.Arch, s.TotalRAMMB/1024)
+	} else {
+		gpuNames := make([]string, len(s.GPUs))
+		for i, g := range s.GPUs {
+			gpuNames[i] = fmt.Sprintf("%s (%.0f GB)", g.Name, float64(g.VRAMMB)/1024)
+		}
+		base = fmt.Sprintf("%s/%s · %d GB RAM · %s",
+			s.OS, s.Arch, s.TotalRAMMB/1024, strings.Join(gpuNames, " + "))
 	}
-	gpuNames := make([]string, len(s.GPUs))
-	for i, g := range s.GPUs {
-		gpuNames[i] = fmt.Sprintf("%s (%.0f GB)", g.Name, float64(g.VRAMMB)/1024)
+	if s.OS == "windows" {
+		base += "\n  ⚠  Hardware detection is limited on Windows. GPU info may be incomplete."
 	}
-	return fmt.Sprintf("%s/%s · %d GB RAM · %s",
-		s.OS, s.Arch, s.TotalRAMMB/1024, strings.Join(gpuNames, " + "))
+	return base
 }
 
 // parseVRAMString converts strings like "8GB", "8 GB", "8192" (MB) to MB.

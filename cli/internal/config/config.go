@@ -116,6 +116,90 @@ func DeleteAuth() error {
 	return err
 }
 
+// HFCredentials holds the saved Hugging Face credentials.
+// Stored separately from Bloc auth so an HF token never co-mingles with
+// the Bloc Hub JWT. File: ~/.config/bloc/hf_auth.json (chmod 600).
+type HFCredentials struct {
+	Token    string `json:"token"`
+	Username string `json:"username,omitempty"` // optional — populated if we fetch /api/whoami
+}
+
+// LoadHFAuth reads ~/.config/bloc/hf_auth.json.
+// Returns nil, nil if no HF token has been saved.
+// BLOC_HF_TOKEN env var takes precedence and is returned directly without disk read.
+// F-21: Token is never logged or included in error messages.
+func LoadHFAuth() (*HFCredentials, error) {
+	// Environment variable override — supports CI/headless environments.
+	// SEC-ENVIRON: Unset the env var immediately after reading so it is not
+	// inherited by child processes (e.g., the llama-server or vLLM subprocess).
+	if tok := os.Getenv("BLOC_HF_TOKEN"); tok != "" {
+		_ = os.Unsetenv("BLOC_HF_TOKEN") // best-effort: non-fatal if Unsetenv fails
+		return &HFCredentials{Token: tok}, nil
+	}
+
+	dir, err := ConfigDir()
+	if err != nil {
+		return nil, err
+	}
+	path := filepath.Join(dir, "hf_auth.json")
+
+	// Check permissions before reading (F-21)
+	if stat, statErr := os.Stat(path); statErr == nil {
+		if perm := stat.Mode().Perm(); perm > 0o600 {
+			return nil, fmt.Errorf(
+				"HF auth file %s has insecure permissions %04o (expected 0600) — run: chmod 600 %s",
+				path, perm, path,
+			)
+		}
+	}
+
+	data, err := os.ReadFile(path)
+	if os.IsNotExist(err) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("cannot read HF auth file: %w", err)
+	}
+
+	var creds HFCredentials
+	if err := json.Unmarshal(data, &creds); err != nil {
+		return nil, fmt.Errorf("malformed HF auth file: %w", err)
+	}
+	return &creds, nil
+}
+
+// SaveHFAuth writes HF credentials to ~/.config/bloc/hf_auth.json (chmod 600).
+// F-21: File is written with 0600 permissions to restrict read access.
+func SaveHFAuth(creds *HFCredentials) error {
+	dir, err := ConfigDir()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		return err
+	}
+	path := filepath.Join(dir, "hf_auth.json")
+	data, err := json.MarshalIndent(creds, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(path, data, 0600)
+}
+
+// DeleteHFAuth removes the HF auth file.
+func DeleteHFAuth() error {
+	dir, err := ConfigDir()
+	if err != nil {
+		return err
+	}
+	path := filepath.Join(dir, "hf_auth.json")
+	err = os.Remove(path)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	return err
+}
+
 // TelemetrySettings holds telemetry consent.
 // F-12: session_id removed — it was a persistent pseudonymous device identifier.
 // Per-invocation IDs are generated in-memory by the telemetry package when needed.
