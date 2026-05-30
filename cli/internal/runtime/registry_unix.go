@@ -1,3 +1,5 @@
+//go:build !windows
+
 package runtime
 
 import (
@@ -53,7 +55,6 @@ func Resolve(r *recipe.Recipe, runtimeOverride string) (Runtime, error) {
 			}
 			return &DockerVLLMRuntime{image: image}, nil
 
-
 		default:
 			return nil, fmt.Errorf("unknown runtime %q for engine %q — valid options: native, docker", engineRuntime, engineName)
 		}
@@ -62,4 +63,3 @@ func Resolve(r *recipe.Recipe, runtimeOverride string) (Runtime, error) {
 		return nil, fmt.Errorf("unsupported engine %q — supported engines: llama.cpp, vllm", engineName)
 	}
 }
-

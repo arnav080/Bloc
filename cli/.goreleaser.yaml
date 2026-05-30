@@ -72,7 +72,7 @@ nfpms:
 brews:
   - name: bloc
     repository:
-      owner: arnav080
+      owner: Bloc-ai
       name: homebrew-bloc
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
     commit_author:

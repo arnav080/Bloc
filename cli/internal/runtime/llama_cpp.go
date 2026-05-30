@@ -16,6 +16,11 @@ import (
 	"time"
 )
 
+// setSysProcAttr configures platform-specific process group attributes.
+// Implemented in llama_cpp_unix.go (sets Setpgid=true) and
+// llama_cpp_windows.go (no-op — Windows has no process groups).
+
+
 // LlamaCppRuntime implements Runtime for llama.cpp (llama-server binary).
 // It consolidates the logic that was previously split across internal/probe
 // and internal/runner, giving the llama.cpp engine a single cohesive struct.
@@ -130,8 +135,9 @@ func (r *LlamaCppRuntime) Run(ctx context.Context, cfg RunConfig) (*Stats, error
 		cmd.Env = append(cmd.Env, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	// Set process group so we can kill all children on Ctrl+C
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	// Set process group so we can kill all children on Ctrl+C.
+	// The actual SysProcAttr fields are platform-specific (see llama_cpp_unix.go).
+	setSysProcAttr(cmd)
 
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
@@ -182,6 +188,7 @@ func (r *LlamaCppRuntime) Run(ctx context.Context, cfg RunConfig) (*Stats, error
 
 	// Handle SIGINT/SIGTERM — kill the entire process group.
 	// SEC-08: done channel guarantees the goroutine exits instead of leaking.
+	// killProcessGroup is implemented in llama_cpp_unix.go / llama_cpp_windows.go.
 	sigCh := make(chan os.Signal, 1)
 	signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 	done := make(chan struct{})
@@ -189,7 +196,7 @@ func (r *LlamaCppRuntime) Run(ctx context.Context, cfg RunConfig) (*Stats, error
 		select {
 		case <-sigCh:
 			if cmd.Process != nil {
-				syscall.Kill(-cmd.Process.Pid, syscall.SIGTERM) //nolint:errcheck
+				killProcessGroup(cmd.Process)
 			}
 		case <-ctx.Done():
 		case <-done:
